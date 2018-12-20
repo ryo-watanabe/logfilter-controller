@@ -4,7 +4,7 @@ import (
   "strings"
 	"strconv"
 
-  logfiltersv1alpha1 "k8s.io/sample-controller/pkg/apis/logfilters/v1alpha1"
+  logfiltersv1alpha1 "github.com/ryo-watanabe/logfilter-controller/pkg/apis/logfilters/v1alpha1"
 )
 
 const fluentbit_ignore_lua = `function ignore_message(tag, timestamp, record)

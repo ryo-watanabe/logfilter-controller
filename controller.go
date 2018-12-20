@@ -39,11 +39,11 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
 
-	logfiltersv1alpha1 "k8s.io/sample-controller/pkg/apis/logfilters/v1alpha1"
-	clientset "k8s.io/sample-controller/pkg/client/clientset/versioned"
-	logfilterscheme "k8s.io/sample-controller/pkg/client/clientset/versioned/scheme"
-	informers "k8s.io/sample-controller/pkg/client/informers/externalversions/logfilters/v1alpha1"
-	listers "k8s.io/sample-controller/pkg/client/listers/logfilters/v1alpha1"
+	logfilterv1alpha1 "github.com/ryo-watanabe/logfilter-controller/pkg/apis/logfilter/v1alpha1"
+	clientset "github.com/ryo-watanabe/logfilter-controller/pkg/client/clientset/versioned"
+	logfilterscheme "github.com/ryo-watanabe/logfilter-controller/pkg/client/clientset/versioned/scheme"
+	informers "github.com/ryo-watanabe/logfilter-controller/pkg/client/informers/externalversions/logfilter/v1alpha1"
+	listers "github.com/ryo-watanabe/logfilter-controller/pkg/client/listers/logfilter/v1alpha1"
 )
 
 const controllerAgentName = "logfilter-controller"

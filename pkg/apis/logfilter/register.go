@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package logfilters
+package logfilter
 
 const (
-	GroupName = "logfilters.monitorings.ssl.com"
+	GroupName = "logfilter.monitorings.ssl.com"
 )
