@@ -73,13 +73,6 @@ func NewDaemonSet(labels map[string]string, name, namespace, image string) *apps
                   SubPath:   "funcs-ex.lua",
 								},
 							},
-							Lifecycle: &corev1.Lifecycle{
-								PreStop: &corev1.Handler{
-									Exec: &corev1.ExecAction{
-										Command: []string{ "kill", "-SIGUSR1", "1" },
-									},
-								},
-							},
 						},
 					},
           Tolerations: []corev1.Toleration{
