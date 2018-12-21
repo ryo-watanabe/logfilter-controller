@@ -1,0 +1,16 @@
+apiVersion: v1
+data:
+  funcs-ex.lua: |-
+    function default(tag, timestamp, record)
+      return tag, timestamp, new_record
+    end
+
+    function exec2number(tag, timestamp, record)
+      new_record = record
+      new_record["num_exec"] = tonumber(record["exec"])
+      return 1, timestamp, new_record
+    end
+kind: ConfigMap
+metadata:
+  name: fluentbit-lua-ex
+  namespace: fluent-bit

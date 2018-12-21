@@ -33,6 +33,16 @@ func NewDaemonSet(labels map[string]string, name, namespace, image string) *apps
 						{
 							Name:  name,
 							Image: image,
+              Env: []corev1.EnvVar{
+                {
+                  Name: "HOSTNAME",
+                  ValueFrom: &corev1.EnvVarSource{
+                    FieldRef: &corev1.ObjectFieldSelector{
+                      FieldPath: "spec.nodeName",
+                    },
+                  },
+                },
+              },
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "varlog",
@@ -45,17 +55,22 @@ func NewDaemonSet(labels map[string]string, name, namespace, image string) *apps
                 {
 									Name:      "varlibdockercontainers",
 									MountPath: "/var/lib/docker/containers",
-                  ReadOnly:  true
+                  ReadOnly:  true,
 								},
 								{
 									Name:      "config",
 									MountPath: "/fluent-bit/etc/fluent-bit.conf",
-                  SubPath:   "fluent-bit.conf"
+                  SubPath:   "fluent-bit.conf",
 								},
                 {
 									Name:      "lua",
 									MountPath: "/fluent-bit/etc/funcs.lua",
-                  SubPath:   "funcs.conf"
+                  SubPath:   "funcs.lua",
+								},
+                {
+									Name:      "lua-ex",
+									MountPath: "/fluent-bit/etc/funcs-ex.lua",
+                  SubPath:   "funcs-ex.lua",
 								},
 							},
 							Lifecycle: &corev1.Lifecycle{
@@ -78,13 +93,14 @@ func NewDaemonSet(labels map[string]string, name, namespace, image string) *apps
               Key: "node-role.kubernetes.io/controlplane",
               Value: "true",
             },
-          }
+          },
+          ServiceAccountName: "logfilter-controller",
 					Volumes: []corev1.Volume{
             {
 							Name: "varlog",
 							VolumeSource: corev1.VolumeSource{
 								HostPath: &corev1.HostPathVolumeSource{
-                  Path: "/var/log"
+                  Path: "/var/log",
 								},
 							},
 						},
@@ -92,7 +108,7 @@ func NewDaemonSet(labels map[string]string, name, namespace, image string) *apps
 							Name: "rkelog",
 							VolumeSource: corev1.VolumeSource{
 								HostPath: &corev1.HostPathVolumeSource{
-                  Path: "/var/lib/rancher/rke/log"
+                  Path: "/var/lib/rancher/rke/log",
 								},
 							},
 						},
@@ -100,7 +116,7 @@ func NewDaemonSet(labels map[string]string, name, namespace, image string) *apps
 							Name: "varlibdockercontainers",
 							VolumeSource: corev1.VolumeSource{
 								HostPath: &corev1.HostPathVolumeSource{
-                  Path: "/var/lib/docker/containers"
+                  Path: "/var/lib/docker/containers",
 								},
 							},
 						},
@@ -120,6 +136,16 @@ func NewDaemonSet(labels map[string]string, name, namespace, image string) *apps
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
 										Name: "fluentbit-lua",
+									},
+								},
+							},
+						},
+            {
+							Name: "lua-ex",
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: "fluentbit-lua-ex",
 									},
 								},
 							},

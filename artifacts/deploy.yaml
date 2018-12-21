@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fluentbit-logfilter
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fluentbit-logfilter
+  template:
+    metadata:
+      labels:
+        app: fluentbit-logfilter
+    spec:
+      containers:
+        - name: fluentbit-logfilter
+          image: alpine
+          command:
+            - /logfilter-controller
+            - --fluentbitimage=fluent/fluent-bit:0.14
+            - --namespace=default
+      serviceAccountName: logfilter-controller

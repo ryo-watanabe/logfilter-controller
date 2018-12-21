@@ -2,9 +2,8 @@ package fluentbitcfg
 
 import (
   "strings"
-	"strconv"
 
-  logfiltersv1alpha1 "github.com/ryo-watanabe/logfilter-controller/pkg/apis/logfilters/v1alpha1"
+  logfilterv1alpha1 "github.com/ryo-watanabe/logfilter-controller/pkg/apis/logfilter/v1alpha1"
 )
 
 const fluentbit_ignore_lua = `function ignore_message(tag, timestamp, record)
@@ -29,49 +28,60 @@ end
 `
 
 func filterDefine(log_name, message, action string) string {
-  flt :=   "    if string.find(record[\"log\"], \"" + message + "\") then\n"
+  flt :=   "      -- Filter definition to " + action + " " + message + " in " + log_name + "\n"
   if strings.HasPrefix(message, "@startwith:") {
-    start := strings.Split(message, ":", 2)[1]
-    flt := "    if string.sub(record[\"log\"], 1, string.len(\"" + start + "\")) == \"" + start + "\" then\n"
+    start := strings.Split(message, ":")[1]
+    flt += "      if string.sub(record[\"log\"], 1, string.len(\"" + start + "\")) == \"" + start + "\" then\n"
+  } else if strings.HasPrefix(message, "@all") {
+    if action == "drop" {
+      flt += "      return -1, 0, 0\n"
+    } else {
+      flt += "      new_record = record\n"
+      flt += "      new_record[\"ignore_alerts\"] = \"ignore - " + message + "\"\n"
+      flt += "      return 1, timestamp, new_record\n"
+    }
+    return flt
+  } else {
+    flt += "      if string.find(record[\"log\"], \"" + message + "\") then\n"
   }
   if action == "drop" {
-    flt += "      return -1, 0, 0\n"
+    flt += "        return -1, 0, 0\n"
   } else {
-    flt += "      new_record = record\n"
-    flt += "      new_record[\"ignore_alerts\"] = \"ignore - " + message + "\"\n"
-    flt += "      return 1, timestamp, new_record\n"
+    flt += "        new_record = record\n"
+    flt += "        new_record[\"ignore_alerts\"] = \"ignore - " + message + "\"\n"
+    flt += "        return 1, timestamp, new_record\n"
   }
-  flt +=   "    end\n"
+  flt +=   "      end\n"
   return flt
 }
 
-func MakeFluentbitIgnoreLua(logfilters *logfiltersv1alpha1.LogfilterList) map[string]string {
+func MakeFluentbitIgnoreLua(logfilters *logfilterv1alpha1.LogFilterList) map[string]string {
   system_log_filters := ""
   container_log_filters := ""
   pod_log_filters := ""
   for _, filter := range logfilters.Items {
     if filter.Spec.LogKind == "system_log" {
-      system_log_filters += "  if record[\"log_name\"] == \"" + flilter.Spec.LogName + "\" then\n"
-      system_log_filters += filterDefine(flilter.Spec.LogName, flilter.Spec.Message, flilter.Spec.Action)
-      system_log_filters += "  end\n"
+      system_log_filters += "    if record[\"log_name\"] == \"" + filter.Spec.LogName + "\" then\n"
+      system_log_filters += filterDefine(filter.Spec.LogName, filter.Spec.Message, filter.Spec.Action)
+      system_log_filters += "    end\n"
     } else if filter.Spec.LogKind == "container_log" {
-      container_log_filters += "  if record[\"container_name\"] == \"" + flilter.Spec.LogName + "\" then\n"
-      container_log_filters += filterDefine(flilter.Spec.LogName, flilter.Spec.Message, flilter.Spec.Action)
-      container_log_filters += "  end\n"
+      container_log_filters += "    if record[\"container_name\"] == \"" + filter.Spec.LogName + "\" then\n"
+      container_log_filters += filterDefine(filter.Spec.LogName, filter.Spec.Message, filter.Spec.Action)
+      container_log_filters += "    end\n"
     } else if filter.Spec.LogKind == "pod_log" {
-      pod_log_filters += "  if record[\"kubernetes\"][\"container_name\"] == \"" + flilter.Spec.LogName + "\" then\n"
-      pod_log_filters += filterDefine(flilter.Spec.LogName, flilter.Spec.Message, flilter.Spec.Action)
-      pod_log_filters += "  end\n"
+      pod_log_filters += "    if record[\"kubernetes\"][\"container_name\"] == \"" + filter.Spec.LogName + "\" then\n"
+      pod_log_filters += filterDefine(filter.Spec.LogName, filter.Spec.Message, filter.Spec.Action)
+      pod_log_filters += "    end\n"
     }
   }
-  lua := strings.Replace(fluentbit_ignore_lua, "POD_LOG_FILTERS", pod_log_filters)
-  lua = strings.Replace(lua, "CONTAINER_LOG_FILTERS", container_log_filters)
-  lua = strings.Replace(lua, "SYSTEM_LOG_FILTERS", system_log_filters)
+  lua := strings.Replace(fluentbit_ignore_lua, "POD_LOG_FILTERS", pod_log_filters, 1)
+  lua = strings.Replace(lua, "CONTAINER_LOG_FILTERS", container_log_filters, 1)
+  lua = strings.Replace(lua, "SYSTEM_LOG_FILTERS", system_log_filters, 1)
   return map[string]string{"funcs.lua":lua}
 }
 
-func IsValicInFluentbitLua(logfilter *logfiltersv1alpha1, currentfluentbitlua string) bool {
-  define := filterDefine(logflilter.Spec.LogName, logflilter.Spec.Message, logflilter.Spec.Action)
+func IsValidInFluentbitLua(logfilter *logfilterv1alpha1.LogFilter, currentfluentbitlua string) bool {
+  define := filterDefine(logfilter.Spec.LogName, logfilter.Spec.Message, logfilter.Spec.Action)
   if !strings.Contains(currentfluentbitlua, define) {
 		return false
 	}

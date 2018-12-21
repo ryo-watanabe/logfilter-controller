@@ -44,6 +44,8 @@ import (
 	logfilterscheme "github.com/ryo-watanabe/logfilter-controller/pkg/client/clientset/versioned/scheme"
 	informers "github.com/ryo-watanabe/logfilter-controller/pkg/client/informers/externalversions/logfilter/v1alpha1"
 	listers "github.com/ryo-watanabe/logfilter-controller/pkg/client/listers/logfilter/v1alpha1"
+	"github.com/ryo-watanabe/logfilter-controller/pkg/fluentbitcfg"
+	"github.com/ryo-watanabe/logfilter-controller/pkg/resources"
 )
 
 const controllerAgentName = "logfilter-controller"
@@ -72,8 +74,8 @@ type Controller struct {
 
 	//daemonSetsLister appslisters.DaemonSetLister
 	//daemonSetSynced cache.InformerSynced
-	logfilterLister        listers.FooLister
-	logfiltersSynced        cache.InformerSynced
+	logFilterLister        listers.LogFilterLister
+	logFiltersSynced        cache.InformerSynced
 
 	// workqueue is a rate limited work queue. This is used to queue work to be
 	// processed instead of performing it as soon as a change happens. This
@@ -95,14 +97,13 @@ type Controller struct {
 func NewController(
 	kubeclientset kubernetes.Interface,
 	logfilterclientset clientset.Interface,
-	fooInformer informers.FooInformer,
-	haproxyimage, proxydomain, proxynamespace, proxymode string, proxyport int,
-	rancherhttpclient *rancherhttpclient.Rancherhttpclient) *Controller {
+	logFilterInformer informers.LogFilterInformer,
+	fluentbitimage string) *Controller {
 
 	// Create event broadcaster
 	// Add sample-controller types to the default Kubernetes Scheme so Events can be
 	// logged for sample-controller types.
-	utilruntime.Must(samplescheme.AddToScheme(scheme.Scheme))
+	utilruntime.Must(logfilterscheme.AddToScheme(scheme.Scheme))
 	klog.V(4).Info("Creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(klog.Infof)
@@ -112,22 +113,22 @@ func NewController(
 	controller := &Controller{
 		kubeclientset:     kubeclientset,
 		logfilterclientset:   logfilterclientset,
-		logfilterLister:        logfilterInformer.Lister(),
-		logfiltersSynced:        logfilterInformer.Informer().HasSynced,
-		workqueue:         workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Foos"),
+		logFilterLister:        logFilterInformer.Lister(),
+		logFiltersSynced:        logFilterInformer.Informer().HasSynced,
+		workqueue:         workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "LogFilters"),
 		recorder:          recorder,
-		fluentbitimage:      haproxyimage,
+		fluentbitimage:      fluentbitimage,
 		namespace:    namespace,
 		currentfluentbitlua: "",
 		labels:  map[string]string{
-			"app":        "cluster-api-proxy",
-			"controller": "cluster-api-proxy-controller",
+			"app":        "fluent-bit",
+			"controller": "logfilter-controller",
 		},
 	}
 
 	klog.Info("Setting up event handlers")
 	// Set up an event handler for when Foo resources change
-	logfilterInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	logFilterInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueueLogfilter,
 		UpdateFunc: func(old, new interface{}) {
 			controller.enqueueLogfilter(new)
@@ -150,7 +151,7 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	getOptions := metav1.GetOptions{IncludeUninitialized: false}
 
   // ConfigMap haproxy.cfg - Always update at starting controller
-	logfilters, err := c.logfilterclientset.LogfiltersV1alpha1().Logfilters(c.namespace).List(listOptions)
+	logfilters, err := c.logfilterclientset.LogfilterV1alpha1().LogFilters(c.namespace).List(listOptions)
 	if err != nil {
 		return fmt.Errorf("Failed to list Logfilter : " + err.Error())
 	}
@@ -158,8 +159,8 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 		klog.Info("Logfilter : " + logfilter.ObjectMeta.Name)
 	}
 	lua := fluentbitcfg.MakeFluentbitIgnoreLua(logfilters)
-	configmap, err := c.kubeclientset.CoreV1().ConfigMaps(c.proxynamespace).Get("fluentbit-lua", getOptions)
-	newConfigMap := resources.NewConfigMap(lua, "fluentbit-lua", c.namespace, c.labels)
+	configmap, err := c.kubeclientset.CoreV1().ConfigMaps(c.namespace).Get("fluentbit-lua", getOptions)
+	newConfigMap := resources.NewConfigMap("fluentbit-lua", c.namespace, lua)
 	if errors.IsNotFound(err) {
 		configmap, err = c.kubeclientset.CoreV1().ConfigMaps(c.namespace).Create(newConfigMap)
 	} else {
@@ -173,11 +174,11 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 
   // Check haproxy daemonset and start when it's not found - Always update at starting controller
 	_, err = c.kubeclientset.AppsV1().DaemonSets(c.namespace).Get("fluent-bit", getOptions)
-	newDaemonSet = resources.NewDaemonSet(c.labels, "fluent-bit", c.namespace)
+	newDaemonSet := resources.NewDaemonSet(c.labels, "fluent-bit", c.namespace, c.fluentbitimage)
 	if errors.IsNotFound(err) {
-		_, err = c.kubeclientset.AppsV1().DaemonSets(c.proxynamespace).Create(newDaemonSet)
+		_, err = c.kubeclientset.AppsV1().DaemonSets(c.namespace).Create(newDaemonSet)
 	} else {
-		_, err = c.kubeclientset.AppsV1().DaemonSets(c.proxynamespace).Update(newDaemonSet)
+		_, err = c.kubeclientset.AppsV1().DaemonSets(c.namespace).Update(newDaemonSet)
 	}
 	if err != nil {
 		return fmt.Errorf("Failed to deploy fluent-bit daemonset : " + err.Error())
@@ -189,7 +190,7 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	// Wait for the caches to be synced before starting workers
 	klog.Info("Waiting for informer caches to sync")
 	//if ok := cache.WaitForCacheSync(stopCh, c.deploymentsSynced, c.foosSynced); !ok {
-	if ok := cache.WaitForCacheSync(stopCh, c.logfiltersSynced); !ok {
+	if ok := cache.WaitForCacheSync(stopCh, c.logFiltersSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
@@ -281,7 +282,7 @@ func (c *Controller) syncHandler(key string) error {
 	}
 
 	// Get the Proxy resource with this namespace/name.
-	logfilter, err := c.logfiltersLister.Logfilters(namespace).Get(name)
+	logfilter, err := c.logFilterLister.LogFilters(namespace).Get(name)
 
 	// Check deleted and update proxy setting.
 	if err != nil {
@@ -299,7 +300,7 @@ func (c *Controller) syncHandler(key string) error {
 	}
 
 	// Check if foo is set in haproxy.cfg and ready, then update proxy.
-	if !fluentbitcfg.IsValidInIgnoreLua(Logfilter) {
+	if !fluentbitcfg.IsValidInFluentbitLua(logfilter, c.currentfluentbitlua) {
 		err = c.updateLogfilter()
 		if err != nil {
 			return err
@@ -313,14 +314,14 @@ func (c *Controller) syncHandler(key string) error {
 		return err
 	}
 
-	c.recorder.Event(foo, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
+	c.recorder.Event(logfilter, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
 	return nil
 }
 
-func (c *Controller) updateLogfilterStatus(logfilter *logfiltersv1alpha1.Logfilter, phase string) error {
+func (c *Controller) updateLogfilterStatus(logfilter *logfilterv1alpha1.LogFilter, phase string) error {
 	logfilterCopy := logfilter.DeepCopy()
 	logfilterCopy.Status.Phase = phase
-	_, err := c.logfilterclientset.LogfiltersV1alpha1().Logfilters(logfilter.Namespace).Update(logfilterCopy)
+	_, err := c.logfilterclientset.LogfilterV1alpha1().LogFilters(logfilter.Namespace).Update(logfilterCopy)
 	return err
 }
 
@@ -341,20 +342,20 @@ func (c *Controller) enqueueLogfilter(obj interface{}) {
 func (c *Controller) updateLogfilter() error {
 	// Get All Proxy
 	listOptions := metav1.ListOptions{IncludeUninitialized: false}
-	logfilter, err := c.logfilterclientset.LogfiltersV1alpha1().Logfilters(c.namespace).List(listOptions)
+	logfilters, err := c.logfilterclientset.LogfilterV1alpha1().LogFilters(c.namespace).List(listOptions)
 	if err != nil {
 		return fmt.Errorf("Failed to list Logfilter : " + err.Error())
 	}
 
 	// Update Configmap haproxy.cfg
-	lua := haproxycfg.MakeFluentbitIgnoreLua(logfilters)
-	configmap, err := c.kubeclientset.CoreV1().ConfigMaps(c.proxynamespace).Update(
-		resources.NewConfigMap(lua, "fluentbit-lua", c.namespace, c.labels))
+	lua := fluentbitcfg.MakeFluentbitIgnoreLua(logfilters)
+	configmap, err := c.kubeclientset.CoreV1().ConfigMaps(c.namespace).Update(
+		resources.NewConfigMap("fluentbit-lua", c.namespace, lua))
 	if err != nil {
 		return fmt.Errorf("Failed to update ConfigMap for fluent-bit lua script : " + err.Error())
 	}
 	c.currentfluentbitlua = configmap.Data["funcs.lua"]
-	klog.Info("Current fluent-bit lua script : " + c.currentffluentbitlua)
+	klog.Info("Current fluent-bit lua script : " + c.currentfluentbitlua)
 
 	// Restert haproxy daemonset
 	_, err = c.kubeclientset.AppsV1().DaemonSets(c.namespace).Update(

@@ -17,5 +17,5 @@ limitations under the License.
 package logfilter
 
 const (
-	GroupName = "logfilter.monitorings.ssl.com"
+	GroupName = "logfilter.ssl.com"
 )

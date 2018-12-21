@@ -24,16 +24,16 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Foo is a specification for a Foo resource
-type Logfilter struct {
+type LogFilter struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   LogfilterSpec   `json:"spec"`
-	Status LogfilterStatus `json:"status"`
+	Spec   LogFilterSpec   `json:"spec"`
+	Status LogFilterStatus `json:"status"`
 }
 
 // FooSpec is the spec for a Foo resource
-type LogfilterSpec struct {
+type LogFilterSpec struct {
 	Action string `json:"action"`
 	LogKind string `json:"log_kind"`
 	LogName string `json:"log_name"`
@@ -41,16 +41,16 @@ type LogfilterSpec struct {
 }
 
 // FooStatus is the status for a Foo resource
-type LogfilterStatus struct {
+type LogFilterStatus struct {
 	Phase string `json:"phase"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // FooList is a list of Foo resources
-type LogfilterList struct {
+type LogFilterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []Logfilter `json:"items"`
+	Items []LogFilter `json:"items"`
 }

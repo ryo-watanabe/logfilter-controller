@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   labels:
     app: fluent-bit
-  name: fluent-bit-config
+  name: fluentbit-config
   namespace: kube-system
 data:
   fluent-bit.conf: |-
