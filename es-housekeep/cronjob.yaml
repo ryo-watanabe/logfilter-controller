@@ -1,0 +1,22 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: es-housekeep
+spec:
+  schedule: "0 3 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: es-housekeep
+            image: [image]:[tag]
+            args:
+            - -e
+            - es-hostname
+            - -i
+            - index_prefix
+            - -d
+            - '30'
+            - -D
+          restartPolicy: Never

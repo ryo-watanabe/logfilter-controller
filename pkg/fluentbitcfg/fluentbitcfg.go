@@ -37,7 +37,7 @@ func filterDefine(log_name, message, action string) string {
       flt += "      return -1, 0, 0\n"
     } else {
       flt += "      new_record = record\n"
-      flt += "      new_record[\"ignore_alerts\"] = \"ignore - " + message + "\"\n"
+      flt += "      new_record[\"ignore_alerts\"] = \"" + log_name + " - " + message + "\"\n"
       flt += "      return 1, timestamp, new_record\n"
     }
     return flt
@@ -48,7 +48,7 @@ func filterDefine(log_name, message, action string) string {
     flt += "        return -1, 0, 0\n"
   } else {
     flt += "        new_record = record\n"
-    flt += "        new_record[\"ignore_alerts\"] = \"ignore - " + message + "\"\n"
+    flt += "        new_record[\"ignore_alerts\"] = \"" + log_name + " - " + message + "\"\n"
     flt += "        return 1, timestamp, new_record\n"
   }
   flt +=   "      end\n"
