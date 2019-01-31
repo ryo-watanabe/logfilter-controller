@@ -69,7 +69,7 @@ ret = 0
 val = ""
 message = ""
 
-if req["post_action"] == "add":
+if req["post_action"] == "apply":
     cmd = "echo '"
     cmd += '{"apiVersion": "logfilter.ssl.com/v1alpha1","kind": "LogFilter","metadata": {'
     cmd += '"name": "' + req["filter_name"] + '"},"spec": {'
@@ -93,6 +93,27 @@ if ret:
 else:
     data = json.loads(val)
 
+    add = "<div class='modal fade' role='dialog'><div class='modal-dialog modal-dialog-centered' role='document' tabindex=''-1' role='dialog' aria-labelledby='modal' aria-hidden='true'>"
+    add += "<div class='modal-content'><div class='modal-body'>"
+    add += "<div class='modal-header'><h2 id='modaltitle'>Add Filter</h2></div>"
+    add += "<table class='table'>"
+    add += "<tr><th>Filter Name:</th><td><input name='filter_name' class='form-control' value='' id='filternameinput' /></td></tr>"
+    add += "<tr><th>Log Kind:</th><td><select name='log_kind' class='form-control'>"
+    add += "<option value='system_log'>system_log</option>"
+    add += "<option value='container_log'>container_log</option>"
+    add += "<option value='pod_log'>pod_log</option>"
+    add += "</select></td></tr>"
+    add += "<tr><th>Log Name:</th><td><input name='log_name' class='form-control' value='' /></td></tr>"
+    add += "<tr><th>Message:</th><td><input name='message' class='form-control' value='' /></td></tr>"
+    add += "<tr><th>Action:</th><td><select name='action' class='form-control'>"
+    add += "<option value='ignore'>ignore</option>"
+    add += "<option value='drop'>drop</option>"
+    add += "</select></td></tr>"
+    add += "</table>"
+    add += "<p class='text-right'><a href='javascript:applyFilter()' class='btn btn-primary' id='modalapplybtn'>Add</a>"
+    add += " <button type='button' class='btn btn-secondary' data-dismiss='modal'>Close</button></p>"
+    add += "</div></div></div></div>"
+
     logfilters = "<table class='table'>"
     lf = "<thead><tr>"
     lf += "<th>Filter Name</th>"
@@ -102,23 +123,8 @@ else:
     lf += "<th>action</th>"
     lf += "<th></th>"
     lf += "</tr></thead>"
+    lf += "<tbody>"
     logfilters += lf
-    add = "<tbody><tr>"
-    add += "<td><input name='filter_name' class='form-control' value='' /></td>"
-    add += "<td><select name='log_kind' class='form-control'>"
-    add += "<option value='system_log'>system_log</option>"
-    add += "<option value='container_log'>container_log</option>"
-    add += "<option value='pod_log'>pod_log</option>"
-    add += "</select></td>"
-    add += "<td><input name='log_name' class='form-control' value='' /></td>"
-    add += "<td><input name='message' class='form-control' value='' /></td>"
-    add += "<td><select name='action' class='form-control'>"
-    add += "<option value='ignore'>ignore</option>"
-    add += "<option value='drop'>drop</option>"
-    add += "</select></td>"
-    add += "<td><a href='javascript:addFilter()' class='btn btn-primary'>Add</a></td>"
-    add += "</tr>"
-    logfilters += add
     for item in data["items"]:
         lf = "<tr>"
         lf += "<td>" + item["metadata"]["name"] + "</td>"
@@ -126,7 +132,13 @@ else:
         lf += "<td>" + item["spec"]["log_name"] + "</td>"
         lf += "<td>" + cgi.escape(item["spec"]["message"]).encode('ascii', 'xmlcharrefreplace') + "</td>"
         lf += "<td>" + item["spec"]["action"] + "</td>"
-        lf += "<td><a href='javascript:deleteFilter(" + '"' + item["metadata"]["name"] + '"' + ")' class='btn btn-primary'>Delete</a></td>"
+        lf += "<td><a href='javascript:editFilter(" + \
+              '"' + item["metadata"]["name"] + '",' + \
+              '"' + item["spec"]["log_kind"] + '",' + \
+              '"' + item["spec"]["log_name"] + '",' + \
+              '"' + cgi.escape(item["spec"]["message"]).encode('ascii', 'xmlcharrefreplace') + '",' + \
+              '"' + item["spec"]["action"] + '"' + ")'><span class='glyphicon glyphicon-pencil'></span></a></td>"
+        lf += "<td><a href='javascript:deleteFilter(" + '"' + item["metadata"]["name"] + '"' + ")'><span class='glyphicon glyphicon-trash'></span></a></td>"
         lf += "</tr>"
         logfilters += lf
     logfilters += "</tbody></table>"
@@ -134,15 +146,17 @@ else:
 # Render HTML
 
 renderHead("Logfilter Manager")
-print("<body><div class='container'><div class='form-group'>")
+print("<body><div class='container'>")
 if ret:
     print("Return Code : " + str(ret) + "<br>")
-print("<h1>Applied Log Filters : </h1>")
+print("<h2>Applied Log Filters : </h2>")
+print("<h2 class='text-right'><a href='javascript:addFilter()'><span class='glyphicon glyphicon-plus'></span></a></h2>")
 HtmlForm("form1", "index.py", "POST", params).render()
+print("<div class='form-group'>")
 if message:
     print("Output: " + message)
 else:
-    print(logfilters)
-print("</form>")
-print("</div></div></body>")
+    print(add + logfilters)
+print("</div></form>")
+print("</div></body>")
 print("</html>")
