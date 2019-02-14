@@ -2477,7 +2477,7 @@
   "templating": {
     "list": [
       {
-        "datasource": "k8s Pod Log",
+        "datasource": "k8s log",
         "filters": [],
         "hide": 0,
         "label": "",
@@ -2486,7 +2486,7 @@
         "type": "adhoc"
       },
       {
-        "datasource": "k8s Pod Logs",
+        "datasource": "k8s log",
         "filters": [],
         "hide": 0,
         "label": "",
