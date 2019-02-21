@@ -4,7 +4,6 @@ metadata:
   labels:
     app: fluent-bit
   name: fluentbit-config
-  namespace: kube-system
 data:
   fluent-bit.conf: |-
     [SERVICE]

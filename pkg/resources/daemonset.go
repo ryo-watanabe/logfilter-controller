@@ -67,11 +67,6 @@ func NewDaemonSet(labels map[string]string, name, namespace, image string) *apps
 									MountPath: "/fluent-bit/etc/funcs.lua",
                   SubPath:   "funcs.lua",
 								},
-                {
-									Name:      "lua-ex",
-									MountPath: "/fluent-bit/etc/funcs-ex.lua",
-                  SubPath:   "funcs-ex.lua",
-								},
 							},
 						},
 					},
@@ -129,16 +124,6 @@ func NewDaemonSet(labels map[string]string, name, namespace, image string) *apps
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
 										Name: "fluentbit-lua",
-									},
-								},
-							},
-						},
-            {
-							Name: "lua-ex",
-							VolumeSource: corev1.VolumeSource{
-								ConfigMap: &corev1.ConfigMapVolumeSource{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: "fluentbit-lua-ex",
 									},
 								},
 							},

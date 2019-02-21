@@ -18,17 +18,11 @@ package main
 
 import (
 	"flag"
-	"time"
 	"k8s.io/klog"
 
-	//kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	clientset "github.com/ryo-watanabe/logfilter-controller/pkg/client/clientset/versioned"
-	informers "github.com/ryo-watanabe/logfilter-controller/pkg/client/informers/externalversions"
 	"github.com/ryo-watanabe/logfilter-controller/pkg/signals"
 )
 
@@ -59,20 +53,11 @@ func main() {
 		klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
 	}
 
-	logfilterClient, err := clientset.NewForConfig(cfg)
-	if err != nil {
-		klog.Fatalf("Error building example clientset: %s", err.Error())
-	}
-
-	logfilterInformerFactory := informers.NewSharedInformerFactory(logfilterClient, time.Second*30)
-
-	controller := NewController(kubeClient, logfilterClient,
-		logfilterInformerFactory.Logfilter().V1alpha1().LogFilters(), fluentbitimage,
-	)
+	controller := NewController(kubeClient, fluentbitimage, namespace)
 
 	// notice that there is no need to run Start methods in a separate goroutine. (i.e. go kubeInformerFactory.Start(stopCh)
 	// Start method is non-blocking and runs all registered informers in a dedicated goroutine.
-	logfilterInformerFactory.Start(stopCh)
+	//logfilterInformerFactory.Start(stopCh)
 
 	if err = controller.Run(2, stopCh); err != nil {
 		klog.Fatalf("Error running controller: %s", err.Error())

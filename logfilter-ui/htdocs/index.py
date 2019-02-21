@@ -71,8 +71,8 @@ message = ""
 
 if req["post_action"] == "apply":
     cmd = "echo '"
-    cmd += '{"apiVersion": "logfilter.ssl.com/v1alpha1","kind": "LogFilter","metadata": {'
-    cmd += '"name": "' + req["filter_name"] + '"},"spec": {'
+    cmd += '{"apiVersion": "v1","kind": "ConfigMap","metadata": {'
+    cmd += '"name": "' + req["filter_name"] + '","labels": {"logfilter.ssl.com/filterdata": "true"}},"data": {'
     cmd += '"action": "' + req["action"] + '",'
     cmd += '"log_kind": "' + req["log_kind"] + '",'
     cmd += '"log_name": "' + req["log_name"] + '",'
@@ -81,12 +81,12 @@ if req["post_action"] == "apply":
     (ret, val) = localCommand(cmd)
 
 if req["post_action"] == "delete":
-    (ret, val) = localCommand("kubectl delete logfilters.logfilter.ssl.com " + req["filter_name"] + " --kubeconfig=/kubecfg")
+    (ret, val) = localCommand("kubectl delete cm " + req["filter_name"] + " --kubeconfig=/kubecfg")
 
 params = { 'post_action':'none' }
 
 if ret == 0:
-    (ret, val) = localCommand("kubectl get logfilters.logfilter.ssl.com -o json --kubeconfig=/kubecfg")
+    (ret, val) = localCommand("kubectl get cm -o json --kubeconfig=/kubecfg -l logfilter.ssl.com/filterdata=true")
 
 if ret:
     message = val
@@ -128,16 +128,16 @@ else:
     for item in data["items"]:
         lf = "<tr>"
         lf += "<td>" + item["metadata"]["name"] + "</td>"
-        lf += "<td>" + item["spec"]["log_kind"] + "</td>"
-        lf += "<td>" + item["spec"]["log_name"] + "</td>"
-        lf += "<td>" + cgi.escape(item["spec"]["message"]).encode('ascii', 'xmlcharrefreplace') + "</td>"
-        lf += "<td>" + item["spec"]["action"] + "</td>"
+        lf += "<td>" + item["data"]["log_kind"] + "</td>"
+        lf += "<td>" + item["data"]["log_name"] + "</td>"
+        lf += "<td>" + cgi.escape(item["data"]["message"]).encode('ascii', 'xmlcharrefreplace') + "</td>"
+        lf += "<td>" + item["data"]["action"] + "</td>"
         lf += "<td><a href='javascript:editFilter(" + \
               '"' + item["metadata"]["name"] + '",' + \
-              '"' + item["spec"]["log_kind"] + '",' + \
-              '"' + item["spec"]["log_name"] + '",' + \
-              '"' + cgi.escape(item["spec"]["message"]).encode('ascii', 'xmlcharrefreplace') + '",' + \
-              '"' + item["spec"]["action"] + '"' + ")'><span class='glyphicon glyphicon-pencil'></span></a></td>"
+              '"' + item["data"]["log_kind"] + '",' + \
+              '"' + item["data"]["log_name"] + '",' + \
+              '"' + cgi.escape(item["data"]["message"]).encode('ascii', 'xmlcharrefreplace') + '",' + \
+              '"' + item["data"]["action"] + '"' + ")'><span class='glyphicon glyphicon-pencil'></span></a></td>"
         lf += "<td><a href='javascript:deleteFilter(" + '"' + item["metadata"]["name"] + '"' + ")'><span class='glyphicon glyphicon-trash'></span></a></td>"
         lf += "</tr>"
         logfilters += lf

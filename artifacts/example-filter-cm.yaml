@@ -1,0 +1,251 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cattle-agent-no-such-host
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: ignore
+  log_kind: pod_log
+  log_name: agent
+  message: no such host
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elasticsearch-warnings
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: ignore
+  log_kind: pod_log
+  log_name: elasticsearch
+  message: '[WARN]'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-all
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: ignore
+  log_kind: pod_log
+  log_name: grafana
+  message: '@all'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-apiserver-broken-pipe
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: ignore
+  log_kind: container_log
+  log_name: kube-apiserver
+  message: 'write: broken pipe'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-apiserver-connection-reset
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: ignore
+  log_kind: container_log
+  log_name: kube-apiserver
+  message: connection reset by peer
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-apiserver-openapi
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: ignore
+  log_kind: container_log
+  log_name: kube-apiserver
+  message: OpenAPI
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-apiserver-tls-handshake-error
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: ignore
+  log_kind: container_log
+  log_name: kube-apiserver
+  message: TLS handshake error
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-apiserver-watch-chan-error
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: ignore
+  log_kind: container_log
+  log_name: kube-apiserver
+  message: watch chan error
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-controller-manager-drop-latest-version
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: drop
+  log_kind: container_log
+  log_name: kube-controller-manager
+  message: latest version and try again
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubelet-broken-pipe
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: ignore
+  log_kind: container_log
+  log_name: kubelet
+  message: 'write: broken pipe'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubelet-drop-orphaned-pod
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: drop
+  log_kind: container_log
+  log_name: kubelet
+  message: Orphaned pod
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubelet-exit-status-one
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: ignore
+  log_kind: container_log
+  log_name: kubelet
+  message: 'with error: exit status 1'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubelet-ignore-info
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: drop
+  log_kind: container_log
+  log_name: kubelet
+  message: '@startwith:I'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubelet-ignore-warning
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: drop
+  log_kind: container_log
+  log_name: kubelet
+  message: '@startwith:W'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubelet-no-such-container
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: ignore
+  log_kind: container_log
+  log_name: kubelet
+  message: No such container
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubelet-no-such-file-or-directory
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: ignore
+  log_kind: container_log
+  log_name: kubelet
+  message: No such file or directory
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubelet-operation-delete
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: ignore
+  log_kind: container_log
+  log_name: kubelet
+  message: Operation Delete is not supported
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logfilter-info
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: drop
+  log_kind: pod_log
+  log_name: fluentbit-logfilter
+  message: '@all'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: metrics-server-unknown-authority
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: ignore
+  log_kind: pod_log
+  log_name: metrics-server
+  message: unknown authority
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: syslog-docker-no-such-container
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: ignore
+  log_kind: system_log
+  log_name: /var/log/syslog
+  message: no such container
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: syslog-networkd-dispatcher
+  labels:
+    logfilter.ssl.com/filterdata: "true"
+data:
+  action: ignore
+  log_kind: system_log
+  log_name: /var/log/syslog
+  message: networkd%-dispatcher

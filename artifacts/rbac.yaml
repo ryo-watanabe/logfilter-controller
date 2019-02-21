@@ -1,22 +1,45 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  labels:
-    component: logfilter-controller
+  name: logfilter-manager
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: configmap-editor
+rules:
+- apiGroups:
+  - "*"
+  resources:
+  - configmaps
+  verbs:
+  - "*"
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: logfilter-manager
+subjects:
+  - kind: ServiceAccount
+    name: logfilter-manager
+roleRef:
+  kind: Role
+  name: configmap-editor
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
   name: logfilter-controller
-  namespace: kube-system
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
   name: logfilter-controller
-  labels:
-    component: logfilter-controller
 subjects:
   - kind: ServiceAccount
-    namespace: kube-system
     name: logfilter-controller
+    namespace: fluent-bit
 roleRef:
   kind: ClusterRole
   name: cluster-admin
