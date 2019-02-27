@@ -1,8 +1,8 @@
 {
   "__inputs": [
     {
-      "name": "DS_K8S",
-      "label": "k8s log",
+      "name": "DS_CLUSTER02",
+      "label": "cluster02",
       "description": "",
       "type": "datasource",
       "pluginId": "elasticsearch",
@@ -58,7 +58,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1550132566342,
+  "iteration": 1551242761587,
   "links": [],
   "panels": [
     {
@@ -70,7 +70,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_K8S}",
+      "datasource": "${DS_CLUSTER02}",
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -143,7 +143,7 @@
               "type": "count"
             }
           ],
-          "query": "_exists_:log AND $log_kind.keyword:$log_name",
+          "query": "_exists_:log AND $log_kind.keyword:$log_name AND hostname:$hostname",
           "refId": "A",
           "timeField": "@timestamp"
         }
@@ -166,7 +166,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_K8S}",
+      "datasource": "${DS_CLUSTER02}",
       "fill": 1,
       "gridPos": {
         "h": 5,
@@ -217,7 +217,7 @@
               "type": "count"
             }
           ],
-          "query": "_exists_:log AND $log_kind.keyword:$log_name",
+          "query": "_exists_:log AND $log_kind.keyword:$log_name AND hostname:$hostname",
           "refId": "A",
           "timeField": "@timestamp"
         }
@@ -277,7 +277,7 @@
           "value": "hostname"
         }
       ],
-      "datasource": "${DS_K8S}",
+      "datasource": "${DS_CLUSTER02}",
       "fontSize": "100%",
       "gridPos": {
         "h": 16,
@@ -330,7 +330,7 @@
               "type": "raw_document"
             }
           ],
-          "query": "_exists_:log AND $log_kind.keyword:$log_name",
+          "query": "_exists_:log AND $log_kind.keyword:$log_name AND hostname:$hostname",
           "refId": "A",
           "timeField": "@timestamp"
         }
@@ -352,8 +352,8 @@
         "current": {
           "selected": false,
           "tags": [],
-          "text": "kubernetes.container_name",
-          "value": "kubernetes.container_name"
+          "text": "log_name",
+          "value": "log_name"
         },
         "hide": 0,
         "includeAll": false,
@@ -362,7 +362,7 @@
         "name": "log_kind",
         "options": [
           {
-            "selected": false,
+            "selected": true,
             "text": "log_name",
             "value": "log_name"
           },
@@ -372,7 +372,7 @@
             "value": "container_name"
           },
           {
-            "selected": true,
+            "selected": false,
             "text": "kubernetes.container_name",
             "value": "kubernetes.container_name"
           }
@@ -384,7 +384,7 @@
       {
         "allValue": "none",
         "current": {},
-        "datasource": "${DS_K8S}",
+        "datasource": "${DS_CLUSTER02}",
         "hide": 0,
         "includeAll": false,
         "label": null,
@@ -403,7 +403,28 @@
         "useTags": false
       },
       {
-        "datasource": "k8s log",
+        "allValue": null,
+        "current": {},
+        "datasource": "${DS_CLUSTER02}",
+        "hide": 0,
+        "includeAll": true,
+        "label": null,
+        "multi": false,
+        "name": "hostname",
+        "options": [],
+        "query": "{\"find\": \"terms\", \"field\": \"hostname.keyword\"}",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "datasource": "cluster02",
         "filters": [],
         "hide": 0,
         "label": "",
@@ -443,7 +464,7 @@
     ]
   },
   "timezone": "",
-  "title": "Log search k8s log",
+  "title": "log search",
   "uid": "VAh1z8uik",
-  "version": 5
+  "version": 3
 }

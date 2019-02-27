@@ -1,8 +1,8 @@
 {
   "__inputs": [
     {
-      "name": "DS_K8S_LOG",
-      "label": "k8s log",
+      "name": "DS_CLUSTER02",
+      "label": "cluster02",
       "description": "",
       "type": "datasource",
       "pluginId": "elasticsearch",
@@ -64,7 +64,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1550720661480,
+  "iteration": 1551242871258,
   "links": [],
   "panels": [
     {
@@ -91,7 +91,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -200,7 +200,7 @@
           "value": "hostname"
         }
       ],
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "fontSize": "100%",
       "gridPos": {
         "h": 8,
@@ -305,7 +305,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "fill": 1,
       "gridPos": {
         "h": 6,
@@ -433,7 +433,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -542,7 +542,7 @@
           "value": "hostname"
         }
       ],
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "fontSize": "100%",
       "gridPos": {
         "h": 8,
@@ -647,7 +647,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "fill": 1,
       "gridPos": {
         "h": 6,
@@ -775,7 +775,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -884,7 +884,7 @@
           "value": "hostname"
         }
       ],
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "fontSize": "100%",
       "gridPos": {
         "h": 8,
@@ -990,7 +990,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "fill": 1,
       "gridPos": {
         "h": 6,
@@ -1113,7 +1113,7 @@
       "bars": true,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "fill": 1,
       "gridPos": {
         "h": 9,
@@ -1250,7 +1250,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -1345,7 +1345,7 @@
       "bars": true,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "fill": 1,
       "gridPos": {
         "h": 8,
@@ -1477,7 +1477,7 @@
           "value": "hostname"
         }
       ],
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "fontSize": "100%",
       "gridPos": {
         "h": 8,
@@ -1544,7 +1544,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "fill": 1,
       "gridPos": {
         "h": 6,
@@ -1664,7 +1664,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -1759,7 +1759,7 @@
       "bars": true,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "fill": 1,
       "gridPos": {
         "h": 8,
@@ -1891,7 +1891,7 @@
           "value": "hostname"
         }
       ],
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "fontSize": "100%",
       "gridPos": {
         "h": 8,
@@ -1958,7 +1958,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "fill": 1,
       "gridPos": {
         "h": 6,
@@ -2078,7 +2078,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -2173,7 +2173,7 @@
       "bars": true,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "fill": 1,
       "gridPos": {
         "h": 8,
@@ -2305,7 +2305,7 @@
           "value": "hostname"
         }
       ],
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "fontSize": "100%",
       "gridPos": {
         "h": 8,
@@ -2372,7 +2372,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_K8S_LOG}",
+      "datasource": "${DS_CLUSTER02}",
       "fill": 1,
       "gridPos": {
         "h": 6,
@@ -2536,5 +2536,5 @@
   "timezone": "",
   "title": "k8s logs",
   "uid": "UHAXBA1iz",
-  "version": 7
+  "version": 3
 }
