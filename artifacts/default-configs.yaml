@@ -1,0 +1,177 @@
+#### Namespace and RBAC ####
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fluent-bit
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: logfilter-controller
+  namespace: fluent-bit
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: logfilter-controller
+subjects:
+  - kind: ServiceAccount
+    name: logfilter-controller
+    namespace: fluent-bit
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+
+#### Log Inputs ####
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: input-k8s-pod-logs
+  namespace: fluent-bit
+  labels:
+    logfilter.ssl.com/log: "true"
+data:
+  log_kind: k8s_pod_log
+  path: /var/log/containers/*.log
+  tag: kube.*
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: input-rke-container-logs
+  namespace: fluent-bit
+  labels:
+    logfilter.ssl.com/log: "true"
+data:
+  log_kind: rke_container_log
+  path: /var/lib/rancher/rke/log/*.log
+  tag: rke.*
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: input-syslog
+  namespace: fluent-bit
+  labels:
+    logfilter.ssl.com/log: "true"
+data:
+  log_kind: syslog
+  path: /var/log/syslog
+  tag: syslog.syslog
+---
+
+#### Process Monitorings ####
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: input-worker-procs
+  namespace: fluent-bit
+  labels:
+    logfilter.ssl.com/proc: "true"
+data:
+  proc_names: kubelet,dockerd
+  interval_sec: 60
+  node_group: worker
+  tag: proc.*
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: input-master-procs
+  namespace: fluent-bit
+  labels:
+    logfilter.ssl.com/proc: "true"
+data:
+  proc_names: kubelet,dockerd,kube-apiserver,kube-controller,kube-scheduler,etcd
+  interval_sec: 60
+  node_group: master
+  tag: proc.*
+---
+
+#### Pod/Node Metrics ####
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: input-pod-metrics
+  namespace: fluent-bit
+  labels:
+    logfilter.ssl.com/metric: "true"
+data:
+  metric_kind: pod
+  interval_sec: 60
+  tag: metrics.pod
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: input-node-metrics
+  namespace: fluent-bit
+  labels:
+    logfilter.ssl.com/metric: "true"
+data:
+  metric_kind: node
+  interval_sec: 60
+  tag: metrics.node
+---
+
+#### Outputs ####
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: output-es
+  namespace: fluent-bit
+  labels:
+    logfilter.ssl.com/es: "true"
+data:
+  match: *
+  host: elasticsearch.fluent-bit.svc
+  port: 9200
+  index_prefix: cluster01
+---
+
+#### Node Groups ####
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: worker
+  namespace: fluent-bit
+  labels:
+    logfilter.ssl.com/nodegroup: "true"
+data:
+  tolerations: ""
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: master
+  namespace: fluent-bit
+  labels:
+    logfilter.ssl.com/nodegroup: "true"
+data:
+  tolerations: controlplane,etcd
+  node_selector: controlplane
+---
+
+#### Lua scripts for metrics ####
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-metrics-lua
+  namespace: fluent-bit
+data:
+  fluent-bit-metrics.lua: |-
+    function cpu_memory_in_number(tag, timestamp, record)
+      new_record = record
+      cpu_num = string.gsub(record["cpu"],"m","")
+      new_record["cpu_num"] = tonumber(cpu_num)
+      memory_num = string.gsub(record["memory"],"Ki","")
+      new_record["memory_num"] = tonumber(memory_num)
+      return 1, timestamp, new_record
+    end
+
+    function exec2number(tag, timestamp, record)
+      new_record = record
+      new_record["num_exec"] = tonumber(record["exec"])
+      return 1, timestamp, new_record
+    end
