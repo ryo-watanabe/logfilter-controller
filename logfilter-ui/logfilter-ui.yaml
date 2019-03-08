@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: logfilter-manager
+  name: logfilter-manager
+  namespace: fluent-bit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logfilter-manager
+  template:
+    metadata:
+      labels:
+        app: logfilter-manager
+    spec:
+      containers:
+      - env:
+        - name: UI_USER
+          value: [username]
+        - name: UI_PASSWORD
+          value: [password]
+        image: [image]:[tag]
+        imagePullPolicy: IfNotPresent
+        name: logfilter-manager
+      serviceAccount: logfilter-manager
+      serviceAccountName: logfilter-manager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: logfilter-manager
+  name: logfilter-manager
+  namespace: fluent-bit
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: logfilter-manager
+  sessionAffinity: None
+  type: ClusterIP
