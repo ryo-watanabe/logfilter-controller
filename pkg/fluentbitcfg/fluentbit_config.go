@@ -2,7 +2,6 @@ package fluentbitcfg
 
 import (
   "strings"
-  "strcnv"
 
   corev1 "k8s.io/api/core/v1"
 )
@@ -115,7 +114,7 @@ const es_output = `
 func MakeFluentbitConfig(logs *corev1.ConfigMapList, procs *corev1.ConfigMapList,
   outputs *corev1.ConfigMapList, node_group string) map[string]string {
 
-    inputs := ""
+    ins := ""
     // Log inputs
     for _, log := range logs.Items {
       input := ""
@@ -130,38 +129,38 @@ func MakeFluentbitConfig(logs *corev1.ConfigMapList, procs *corev1.ConfigMapList
       }
       input = strings.Replace(input, "@PATH", log.Data["path"], 1)
       input = strings.Replace(input, "@TAG", log.Data["tag"], 2)
-      inputs += input
+      ins += input
     }
     // Proccess monitorings
     for _, proc := range procs.Items {
       if proc.Data["node_group"] != node_group {
         continue
       }
-      proc_names := strings.Split(proc.Data["proc_names"],",",-1)
+      proc_names := strings.Split(proc.Data["proc_names"],",")
       for _, proc_name := range proc_names {
         tag := strings.Replace(proc.Data["tag"], "*", proc_name, 1)
         input := proc_monitoring
         input = strings.Replace(input, "@TAG", tag, 1)
         input = strings.Replace(input, "@PROC_NAME", proc_name, 1)
-        input = strings.Replace(input, "@INTERVAL", strcnv.Itoa(proc.Data["interval_sec"]), 2)
-        inputs += input
+        input = strings.Replace(input, "@INTERVAL", proc.Data["interval_sec"], 2)
+        ins += input
       }
     }
     // Outputs
-    outputs := ""
+    outs := ""
     for _, out := range outputs.Items {
       output := ""
       output = strings.Replace(output, "@MATCH", out.Data["match"], 1)
-      output = strings.Replace(output, "@HOST", log.Data["host"], 1)
-      output = strings.Replace(output, "@PORT", log.Data["port"], 1)
-      output = strings.Replace(output, "@PREFIX", log.Data["index_prefix"], 1)
-      outputs += output
+      output = strings.Replace(output, "@HOST", out.Data["host"], 1)
+      output = strings.Replace(output, "@PORT", out.Data["port"], 1)
+      output = strings.Replace(output, "@PREFIX", out.Data["index_prefix"], 1)
+      outs += output
     }
 
     config := fluentbit_config
-    config = strings.Replace(config, "@INPUTS", inputs, 1)
+    config = strings.Replace(config, "@INPUTS", ins, 1)
     config = strings.Replace(config, "@FILTERS", hostname_filter + ignore_filter, 1)
-    config = strings.Replace(config, "@OUTPUTS", outputs, 1)
+    config = strings.Replace(config, "@OUTPUTS", outs, 1)
 
     return map[string]string{"fluent-bit.conf":config}
 }
@@ -170,7 +169,7 @@ func MakeFluentbitConfig(logs *corev1.ConfigMapList, procs *corev1.ConfigMapList
 func MakeFluentbitMetricsConfig(metrics *corev1.ConfigMapList,
   outputs *corev1.ConfigMapList) map[string]string {
 
-    metrics := ""
+    ins := ""
     // K8s metrics inputs
     for _, m := range metrics.Items {
       input := ""
@@ -181,25 +180,25 @@ func MakeFluentbitMetricsConfig(metrics *corev1.ConfigMapList,
       } else {
         continue
       }
-      input = strings.Replace(input, "@INTERVAL", strcnv.Itoa(proc.Data["interval_sec"]), 2)
-      input = strings.Replace(input, "@TAG", log.Data["tag"], 2)
-      inputs += input
+      input = strings.Replace(input, "@INTERVAL", m.Data["interval_sec"], 2)
+      input = strings.Replace(input, "@TAG", m.Data["tag"], 2)
+      ins += input
     }
     // Outputs
-    outputs := ""
+    outs := ""
     for _, out := range outputs.Items {
       output := ""
       output = strings.Replace(output, "@MATCH", out.Data["match"], 1)
-      output = strings.Replace(output, "@HOST", log.Data["host"], 1)
-      output = strings.Replace(output, "@PORT", log.Data["port"], 1)
-      output = strings.Replace(output, "@PREFIX", log.Data["index_prefix"], 1)
-      outputs += output
+      output = strings.Replace(output, "@HOST", out.Data["host"], 1)
+      output = strings.Replace(output, "@PORT", out.Data["port"], 1)
+      output = strings.Replace(output, "@PREFIX", out.Data["index_prefix"], 1)
+      outs += output
     }
 
     config := fluentbit_config
-    config = strings.Replace(config, "@INPUTS", inputs, 1)
+    config = strings.Replace(config, "@INPUTS", ins, 1)
     config = strings.Replace(config, "@FILTERS", hostname_filter, 1)
-    config = strings.Replace(config, "@OUTPUTS", outputs, 1)
+    config = strings.Replace(config, "@OUTPUTS", outs, 1)
 
     return map[string]string{"fluent-bit.conf":config}
 }

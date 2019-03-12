@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 
@@ -54,6 +55,8 @@ type Controller struct {
 	fluentbitimage string
 	namespace string
 	currentfluentbitlua string
+	currentfluentbitmetricconfig string
+	currentfluentbitconfig map[string]string
 	labels map[string]string
 }
 
@@ -67,6 +70,8 @@ func NewController(
 		fluentbitimage: fluentbitimage,
 		namespace: namespace,
 		currentfluentbitlua: "",
+		currentfluentbitmetricconfig: "",
+		currentfluentbitconfig: map[string]string{},
 		labels: map[string]string{
 			"app":        "fluent-bit",
 			"controller": "logfilter-controller",
@@ -107,47 +112,115 @@ func (c *Controller) runWorker() {
 	}
 }
 
+func (c *Controller) loadConfigMaps(label string) (*corev1.ConfigMapList, error) {
+	selector := &metav1.LabelSelector{MatchLabels: map[string]string{label: "true"}}
+	listOptions := metav1.ListOptions{LabelSelector: metav1.FormatLabelSelector(selector)}
+	configmaps, err := c.kubeclientset.CoreV1().ConfigMaps(c.namespace).List(listOptions)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to list ConfigMaps : " + err.Error())
+	}
+	return configmaps, err
+}
+
+func (c *Controller) updateConfigMap(name string, data map[string]string) (*corev1.ConfigMap, error) {
+	klog.Info("Updating ConfigMap : " + name)
+	getOptions := metav1.GetOptions{IncludeUninitialized: false}
+	configmap, err := c.kubeclientset.CoreV1().ConfigMaps(c.namespace).Get(name, getOptions)
+	newConfigMap := resources.NewConfigMap(name, c.namespace, data)
+	if errors.IsNotFound(err) {
+		configmap, err = c.kubeclientset.CoreV1().ConfigMaps(c.namespace).Create(newConfigMap)
+	} else {
+		configmap, err = c.kubeclientset.CoreV1().ConfigMaps(c.namespace).Update(newConfigMap)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create/update ConfigMap " + name + " : " + err.Error())
+	}
+	return configmap, err
+}
+
+func (c *Controller) updateDaemonSet(name string, nodegroup map[string]string) error {
+	tolerations := ""
+	node_selector := ""
+	if val, ok := nodegroup["tolerations"]; ok {
+		tolerations = val
+	}
+	if val, ok := nodegroup["node_selector"]; ok {
+		node_selector = val
+	}
+
+	getOptions := metav1.GetOptions{IncludeUninitialized: false}
+	_, err := c.kubeclientset.AppsV1().DaemonSets(c.namespace).Get("fluent-bit-" + name, getOptions)
+	newDaemonSet := resources.NewDaemonSet(c.labels, "fluent-bit-" + name, c.namespace,
+		c.fluentbitimage, tolerations, node_selector)
+	if errors.IsNotFound(err) {
+		_, err = c.kubeclientset.AppsV1().DaemonSets(c.namespace).Create(newDaemonSet)
+	} else {
+		_, err = c.kubeclientset.AppsV1().DaemonSets(c.namespace).Update(newDaemonSet)
+	}
+	if err != nil {
+		return fmt.Errorf("Failed to deploy/update fluent-bit daemonset : " + err.Error())
+	}
+	return err
+}
+
 // syncHandler compares the actual state with the desired, and attempts to
 // converge the two.
 func (c *Controller) syncHandler() error {
 
-	// Load current logfilters
-	selector := &metav1.LabelSelector{MatchLabels: map[string]string{"logfilter.ssl.com/filterdata": "true"}}
-	listOptions := metav1.ListOptions{LabelSelector: metav1.FormatLabelSelector(selector)}
-	logfilters, err := c.kubeclientset.CoreV1().ConfigMaps(c.namespace).List(listOptions)
+	// Load/update logfilters
+	logfilters, err := c.loadConfigMaps("logfilter.ssl.com/filterdata")
 	if err != nil {
-		return fmt.Errorf("Failed to list ConfigMaps : " + err.Error())
+		return err
 	}
 	lua := fluentbitcfg.MakeFluentbitIgnoreLua(logfilters)
-
-  if lua["funcs.lua"] != c.currentfluentbitlua {
-		klog.Info("Updating logfilter")
-
-		// Update lua configmap
-		getOptions := metav1.GetOptions{IncludeUninitialized: false}
-		configmap, err := c.kubeclientset.CoreV1().ConfigMaps(c.namespace).Get("fluentbit-lua", getOptions)
-		newConfigMap := resources.NewConfigMap("fluentbit-lua", c.namespace, lua)
-		if errors.IsNotFound(err) {
-			configmap, err = c.kubeclientset.CoreV1().ConfigMaps(c.namespace).Create(newConfigMap)
-		} else {
-			configmap, err = c.kubeclientset.CoreV1().ConfigMaps(c.namespace).Update(newConfigMap)
-		}
+  luaupdated := false
+	if lua["funcs.lua"] != c.currentfluentbitlua {
+		configmap, err := c.updateConfigMap("fluentbit-lua", lua)
 		if err != nil {
-			return fmt.Errorf("Failed to create/update ConfigMap for fluent-bit lua script : " + err.Error())
+			return err
 		}
 		c.currentfluentbitlua = configmap.Data["funcs.lua"]
-		//klog.Info("Current lua script : " + c.currentfluentbitlua)
+		luaupdated = true
+	}
 
-	  // Check haproxy daemonset and start when it's not found - Always update at starting controller
-		_, err = c.kubeclientset.AppsV1().DaemonSets(c.namespace).Get("fluent-bit", getOptions)
-		newDaemonSet := resources.NewDaemonSet(c.labels, "fluent-bit", c.namespace, c.fluentbitimage)
-		if errors.IsNotFound(err) {
-			_, err = c.kubeclientset.AppsV1().DaemonSets(c.namespace).Create(newDaemonSet)
-		} else {
-			_, err = c.kubeclientset.AppsV1().DaemonSets(c.namespace).Update(newDaemonSet)
+  // Load/update configmaps
+	nodegroups, err := c.loadConfigMaps("logfilter.ssl.com/nodegroup")
+	if err != nil {
+		return err
+	}
+	logs, err := c.loadConfigMaps("logfilter.ssl.com/log")
+	if err != nil {
+		return err
+	}
+	procs, err := c.loadConfigMaps("logfilter.ssl.com/proc")
+	if err != nil {
+		return err
+	}
+	outputs, err := c.loadConfigMaps("logfilter.ssl.com/es")
+	if err != nil {
+		return err
+	}
+
+	for _, nodegroup := range nodegroups.Items {
+		group := nodegroup.ObjectMeta.Name
+		cfg := fluentbitcfg.MakeFluentbitConfig(logs, procs, outputs, group)
+
+		configupdated := false
+		currentcfg, ok := c.currentfluentbitconfig[group]
+		if !ok || currentcfg != cfg["fluent-bit.cfg"] {
+			configmap, err := c.updateConfigMap("fluentbit-config", cfg)
+			if err != nil {
+				return err
+			}
+			c.currentfluentbitconfig[group] = configmap.Data["fluent-bit.cfg"]
+			configupdated = true
 		}
-		if err != nil {
-			return fmt.Errorf("Failed to deploy/update fluent-bit daemonset : " + err.Error())
+
+		if luaupdated || configupdated {
+			err = c.updateDaemonSet(group, nodegroup.Data)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

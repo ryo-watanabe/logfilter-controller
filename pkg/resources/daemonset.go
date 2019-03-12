@@ -2,6 +2,8 @@ package resources
 
 import (
   "time"
+  "strings"
+
   metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
   appsv1 "k8s.io/api/apps/v1"
   corev1 "k8s.io/api/core/v1"
@@ -9,12 +11,30 @@ import (
 
 const layout = "2006-01-02-15-04-05"
 // newDaemonset
-func NewDaemonSet(labels map[string]string, name, namespace, image string) *appsv1.DaemonSet {
+func NewDaemonSet(labels map[string]string, name, namespace, image, tolerations, node_selector string) *appsv1.DaemonSet {
 	updateLabels := map[string]string{
 		"app": labels["app"],
 		"controller": labels["controller"],
 		"last_restart": time.Now().Format(layout),
 	}
+
+  tols := []corev1.Toleration{}
+  if tolerations != "" {
+    tlist := strings.Split(tolerations,",")
+    for _, t := range tlist {
+      tols = append(tols, corev1.Toleration{
+        Effect: "NoExecute",
+        Key: "node-role.kubernetes.io/" + t,
+        Value: "true",
+      })
+    }
+  }
+
+  nselector := map[string]string{}
+  if node_selector != "" {
+    nselector["node-role.kubernetes.io/" + node_selector] = "true"
+  }
+
 	return &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -70,18 +90,8 @@ func NewDaemonSet(labels map[string]string, name, namespace, image string) *apps
 							},
 						},
 					},
-          Tolerations: []corev1.Toleration{
-            {
-              Effect: "NoExecute",
-              Key: "node-role.kubernetes.io/etcd",
-              Value: "true",
-            },
-            {
-              Effect: "NoSchedule",
-              Key: "node-role.kubernetes.io/controlplane",
-              Value: "true",
-            },
-          },
+          Tolerations: tols,
+          NodeSelector: nselector,
           ServiceAccountName: "logfilter-controller",
 					Volumes: []corev1.Volume{
             {
