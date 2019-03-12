@@ -22,7 +22,7 @@ roleRef:
   kind: ClusterRole
   name: cluster-admin
   apiGroup: rbac.authorization.k8s.io
-
+---
 #### Log Inputs ####
 apiVersion: v1
 kind: ConfigMap
@@ -60,7 +60,6 @@ data:
   path: /var/log/syslog
   tag: syslog.syslog
 ---
-
 #### Process Monitorings ####
 apiVersion: v1
 kind: ConfigMap
@@ -71,7 +70,7 @@ metadata:
     logfilter.ssl.com/proc: "true"
 data:
   proc_names: kubelet,dockerd
-  interval_sec: 60
+  interval_sec: "60"
   node_group: worker
   tag: proc.*
 ---
@@ -84,11 +83,10 @@ metadata:
     logfilter.ssl.com/proc: "true"
 data:
   proc_names: kubelet,dockerd,kube-apiserver,kube-controller,kube-scheduler,etcd
-  interval_sec: 60
+  interval_sec: "60"
   node_group: master
   tag: proc.*
 ---
-
 #### Pod/Node Metrics ####
 apiVersion: v1
 kind: ConfigMap
@@ -99,7 +97,7 @@ metadata:
     logfilter.ssl.com/metric: "true"
 data:
   metric_kind: pod
-  interval_sec: 60
+  interval_sec: "60"
   tag: metrics.pod
 ---
 apiVersion: v1
@@ -111,10 +109,9 @@ metadata:
     logfilter.ssl.com/metric: "true"
 data:
   metric_kind: node
-  interval_sec: 60
+  interval_sec: "60"
   tag: metrics.node
 ---
-
 #### Outputs ####
 apiVersion: v1
 kind: ConfigMap
@@ -124,12 +121,11 @@ metadata:
   labels:
     logfilter.ssl.com/es: "true"
 data:
-  match: *
+  match: "*"
   host: elasticsearch.fluent-bit.svc
-  port: 9200
+  port: "9200"
   index_prefix: cluster01
 ---
-
 #### Node Groups ####
 apiVersion: v1
 kind: ConfigMap
@@ -140,6 +136,7 @@ metadata:
     logfilter.ssl.com/nodegroup: "true"
 data:
   tolerations: ""
+  node_selector: ""
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -152,7 +149,6 @@ data:
   tolerations: controlplane,etcd
   node_selector: controlplane
 ---
-
 #### Lua scripts for metrics ####
 apiVersion: v1
 kind: ConfigMap
