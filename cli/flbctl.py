@@ -168,8 +168,8 @@ def edit(args,keys,label,create):
 def label_patch(args,label,value):
     if len(args.name) == 0:
         print ("Error : Subject name not given.")
-    (ret, val) = localCommand("kubectl patch cm -n fluent-bit -p '" + '{"metadata":{"labels": {"' + label + '": "' + value + '"}}}' + "' " + args.name[0])
-    print (val)
+    (ret, val) = localCommand("kubectl patch cm -n fluent-bit -p {\"metadata\":{\"labels\":{\"" + label + "\":\"" + value + "\"}}} " + args.name[0])
+    print (val, end="")
 
 # log inputs
 log_keys = [

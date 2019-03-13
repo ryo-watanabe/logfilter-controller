@@ -19,6 +19,13 @@ const hostname_filter = `
     Match *
     Record hostname ${HOSTNAME}
 `
+const metrics_filter = `
+[FILTER]
+    Name lua
+    Match metrics.*
+    script /fluent-bit/etc/fluent-bit-metrics.lua
+    call cpu_memory_in_number
+`
 const ignore_filter = `
 [FILTER]
     Name lua
@@ -36,6 +43,7 @@ const k8s_pod_log = `
     Refresh_Interval 5
     Mem_Buf_Limit    5MB
     Skip_Long_Lines  On
+
 [FILTER]
     Name             kubernetes
     Match            @TAG
@@ -53,6 +61,7 @@ const rke_container_log = `
     Refresh_Interval 5
     Mem_Buf_Limit    5MB
     Skip_Long_Lines  On
+
 [FILTER]
     Name   lua
     Match  @TAG
@@ -111,9 +120,7 @@ const es_output = `
 `
 
 // Make fluent-bit.conf for DaemonSet
-func MakeFluentbitConfig(logs *corev1.ConfigMapList, procs *corev1.ConfigMapList,
-  outputs *corev1.ConfigMapList, node_group string) map[string]string {
-
+func MakeFluentbitConfig(logs , procs, outputs *corev1.ConfigMapList, node_group string) map[string]string {
     ins := ""
     // Log inputs
     for _, log := range logs.Items {
@@ -149,7 +156,7 @@ func MakeFluentbitConfig(logs *corev1.ConfigMapList, procs *corev1.ConfigMapList
     // Outputs
     outs := ""
     for _, out := range outputs.Items {
-      output := ""
+      output := es_output
       output = strings.Replace(output, "@MATCH", out.Data["match"], 1)
       output = strings.Replace(output, "@HOST", out.Data["host"], 1)
       output = strings.Replace(output, "@PORT", out.Data["port"], 1)
@@ -166,8 +173,7 @@ func MakeFluentbitConfig(logs *corev1.ConfigMapList, procs *corev1.ConfigMapList
 }
 
 // Make fluent-bit.conf for DaemonSet
-func MakeFluentbitMetricsConfig(metrics *corev1.ConfigMapList,
-  outputs *corev1.ConfigMapList) map[string]string {
+func MakeFluentbitMetricsConfig(metrics, outputs *corev1.ConfigMapList) map[string]string {
 
     ins := ""
     // K8s metrics inputs
@@ -187,7 +193,7 @@ func MakeFluentbitMetricsConfig(metrics *corev1.ConfigMapList,
     // Outputs
     outs := ""
     for _, out := range outputs.Items {
-      output := ""
+      output := es_output
       output = strings.Replace(output, "@MATCH", out.Data["match"], 1)
       output = strings.Replace(output, "@HOST", out.Data["host"], 1)
       output = strings.Replace(output, "@PORT", out.Data["port"], 1)
@@ -197,7 +203,7 @@ func MakeFluentbitMetricsConfig(metrics *corev1.ConfigMapList,
 
     config := fluentbit_config
     config = strings.Replace(config, "@INPUTS", ins, 1)
-    config = strings.Replace(config, "@FILTERS", hostname_filter, 1)
+    config = strings.Replace(config, "@FILTERS", metrics_filter, 1)
     config = strings.Replace(config, "@OUTPUTS", outs, 1)
 
     return map[string]string{"fluent-bit.conf":config}

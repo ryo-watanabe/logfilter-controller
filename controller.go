@@ -53,27 +53,34 @@ const (
 type Controller struct {
 	kubeclientset kubernetes.Interface
 	fluentbitimage string
+	metricsimage string
 	namespace string
 	currentfluentbitlua string
 	currentfluentbitmetricconfig string
 	currentfluentbitconfig map[string]string
 	labels map[string]string
+	metricslabels map[string]string
 }
 
 // NewController returns a new sample controller
 func NewController(
 	kubeclientset kubernetes.Interface,
-	fluentbitimage, namespace string) *Controller {
+	fluentbitimage, metricsimage, namespace string) *Controller {
 
 	controller := &Controller{
 		kubeclientset: kubeclientset,
 		fluentbitimage: fluentbitimage,
+		metricsimage: metricsimage,
 		namespace: namespace,
 		currentfluentbitlua: "",
 		currentfluentbitmetricconfig: "",
 		currentfluentbitconfig: map[string]string{},
 		labels: map[string]string{
 			"app":        "fluent-bit",
+			"controller": "logfilter-controller",
+		},
+		metricslabels: map[string]string{
+			"app":        "fluent-bit-metrics",
 			"controller": "logfilter-controller",
 		},
 	}
@@ -106,6 +113,7 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 }
 
 func (c *Controller) runWorker() {
+	//klog.Info("Starting sync handler")
 	err := c.syncHandler()
 	if err != nil {
 		runtime.HandleError(err)
@@ -138,7 +146,7 @@ func (c *Controller) updateConfigMap(name string, data map[string]string) (*core
 	return configmap, err
 }
 
-func (c *Controller) updateDaemonSet(name string, nodegroup map[string]string) error {
+func (c *Controller) updateDaemonSet(name, config_name string, nodegroup map[string]string) error {
 	tolerations := ""
 	node_selector := ""
 	if val, ok := nodegroup["tolerations"]; ok {
@@ -149,9 +157,9 @@ func (c *Controller) updateDaemonSet(name string, nodegroup map[string]string) e
 	}
 
 	getOptions := metav1.GetOptions{IncludeUninitialized: false}
-	_, err := c.kubeclientset.AppsV1().DaemonSets(c.namespace).Get("fluent-bit-" + name, getOptions)
-	newDaemonSet := resources.NewDaemonSet(c.labels, "fluent-bit-" + name, c.namespace,
-		c.fluentbitimage, tolerations, node_selector)
+	_, err := c.kubeclientset.AppsV1().DaemonSets(c.namespace).Get(name, getOptions)
+	newDaemonSet := resources.NewDaemonSet(c.labels, name, c.namespace,
+		c.fluentbitimage, tolerations, node_selector, config_name)
 	if errors.IsNotFound(err) {
 		_, err = c.kubeclientset.AppsV1().DaemonSets(c.namespace).Create(newDaemonSet)
 	} else {
@@ -159,6 +167,21 @@ func (c *Controller) updateDaemonSet(name string, nodegroup map[string]string) e
 	}
 	if err != nil {
 		return fmt.Errorf("Failed to deploy/update fluent-bit daemonset : " + err.Error())
+	}
+	return err
+}
+
+func (c *Controller) updateDeployment(name, config_name string) error {
+	getOptions := metav1.GetOptions{IncludeUninitialized: false}
+	_, err := c.kubeclientset.AppsV1().Deployments(c.namespace).Get(name, getOptions)
+	newDeployment := resources.NewDeployment(c.metricslabels, name, c.namespace, c.metricsimage, config_name)
+	if errors.IsNotFound(err) {
+		_, err = c.kubeclientset.AppsV1().Deployments(c.namespace).Create(newDeployment)
+	} else {
+		_, err = c.kubeclientset.AppsV1().Deployments(c.namespace).Update(newDeployment)
+	}
+	if err != nil {
+		return fmt.Errorf("Failed to deploy/update fluent-bit-metrics deployment : " + err.Error())
 	}
 	return err
 }
@@ -196,31 +219,52 @@ func (c *Controller) syncHandler() error {
 	if err != nil {
 		return err
 	}
+	metrics, err := c.loadConfigMaps("logfilter.ssl.com/metric")
+	if err != nil {
+		return err
+	}
 	outputs, err := c.loadConfigMaps("logfilter.ssl.com/es")
 	if err != nil {
 		return err
 	}
 
+  // Log, Proc fluent-bit daemonsets for node groups
 	for _, nodegroup := range nodegroups.Items {
 		group := nodegroup.ObjectMeta.Name
 		cfg := fluentbitcfg.MakeFluentbitConfig(logs, procs, outputs, group)
 
 		configupdated := false
-		currentcfg, ok := c.currentfluentbitconfig[group]
-		if !ok || currentcfg != cfg["fluent-bit.cfg"] {
-			configmap, err := c.updateConfigMap("fluentbit-config", cfg)
+		_, ok := c.currentfluentbitconfig[group]
+		if !ok || cfg["fluent-bit.conf"] != c.currentfluentbitconfig[group] {
+			configmap, err := c.updateConfigMap("fluentbit-config-" + group, cfg)
 			if err != nil {
 				return err
 			}
-			c.currentfluentbitconfig[group] = configmap.Data["fluent-bit.cfg"]
+			c.currentfluentbitconfig[group] = configmap.Data["fluent-bit.conf"]
 			configupdated = true
 		}
 
 		if luaupdated || configupdated {
-			err = c.updateDaemonSet(group, nodegroup.Data)
+			klog.Info("Updating daemonset.")
+			err = c.updateDaemonSet("fluent-bit-" + group, "fluentbit-config-" + group, nodegroup.Data)
 			if err != nil {
 				return err
 			}
+		}
+	}
+
+  // Metrics fluent-bit deployment.
+	metricscfg := fluentbitcfg.MakeFluentbitMetricsConfig(metrics, outputs)
+	if metricscfg["fluent-bit.conf"] != c.currentfluentbitmetricconfig {
+		configmap, err := c.updateConfigMap("fluentbit-metrics-config", metricscfg)
+		if err != nil {
+			return err
+		}
+		c.currentfluentbitmetricconfig = configmap.Data["fluent-bit.conf"]
+		klog.Info("Updating metrics deployment.")
+		err = c.updateDeployment("fluent-bit-metrics", "fluentbit-metrics-config")
+		if err != nil {
+			return err
 		}
 	}
 

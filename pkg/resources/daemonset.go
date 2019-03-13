@@ -11,7 +11,7 @@ import (
 
 const layout = "2006-01-02-15-04-05"
 // newDaemonset
-func NewDaemonSet(labels map[string]string, name, namespace, image, tolerations, node_selector string) *appsv1.DaemonSet {
+func NewDaemonSet(labels map[string]string, name, namespace, image, tolerations, node_selector, config_name string) *appsv1.DaemonSet {
 	updateLabels := map[string]string{
 		"app": labels["app"],
 		"controller": labels["controller"],
@@ -22,11 +22,20 @@ func NewDaemonSet(labels map[string]string, name, namespace, image, tolerations,
   if tolerations != "" {
     tlist := strings.Split(tolerations,",")
     for _, t := range tlist {
-      tols = append(tols, corev1.Toleration{
-        Effect: "NoExecute",
-        Key: "node-role.kubernetes.io/" + t,
-        Value: "true",
-      })
+      if t == "etcd" {
+        tols = append(tols, corev1.Toleration{
+          Effect: "NoExecute",
+          Key: "node-role.kubernetes.io/etcd",
+          Value: "true",
+        })
+      }
+      if t == "controlplane" {
+        tols = append(tols, corev1.Toleration{
+          Effect: "NoSchedule",
+          Key: "node-role.kubernetes.io/controlplane",
+          Value: "true",
+        })
+      }
     }
   }
 
@@ -77,6 +86,20 @@ func NewDaemonSet(labels map[string]string, name, namespace, image, tolerations,
 									MountPath: "/var/lib/docker/containers",
                   ReadOnly:  true,
 								},
+                {
+									Name:      "proc",
+									MountPath: "/host/proc",
+                  ReadOnly:  true,
+								},
+                {
+									Name:      "cgroup",
+									MountPath: "/host/sys/fs/cgroup",
+                  ReadOnly:  true,
+								},
+                {
+									Name:      "cache-volume",
+									MountPath: "/cache",
+								},
 								{
 									Name:      "config",
 									MountPath: "/fluent-bit/etc/fluent-bit.conf",
@@ -86,6 +109,11 @@ func NewDaemonSet(labels map[string]string, name, namespace, image, tolerations,
 									Name:      "lua",
 									MountPath: "/fluent-bit/etc/funcs.lua",
                   SubPath:   "funcs.lua",
+								},
+                {
+									Name:      "chk-proc",
+									MountPath: "/fluent-bit/etc/chk_proc.sh",
+                  SubPath:   "chk_proc.sh",
 								},
 							},
 						},
@@ -118,12 +146,36 @@ func NewDaemonSet(labels map[string]string, name, namespace, image, tolerations,
 								},
 							},
 						},
+            {
+							Name: "proc",
+							VolumeSource: corev1.VolumeSource{
+								HostPath: &corev1.HostPathVolumeSource{
+                  Path: "/proc",
+								},
+							},
+						},
+            {
+							Name: "cgroup",
+							VolumeSource: corev1.VolumeSource{
+								HostPath: &corev1.HostPathVolumeSource{
+                  Path: "/sys/fs/cgroup",
+								},
+							},
+						},
+            {
+							Name: "cache-volume",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+                  Medium: corev1.StorageMediumMemory,
+								},
+							},
+						},
 						{
 							Name: "config",
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
-										Name: "fluentbit-config",
+										Name: config_name,
 									},
 								},
 							},
@@ -138,6 +190,16 @@ func NewDaemonSet(labels map[string]string, name, namespace, image, tolerations,
 								},
 							},
 						},
+            {
+              Name: "chk-proc",
+              VolumeSource: corev1.VolumeSource{
+                ConfigMap: &corev1.ConfigMapVolumeSource{
+                  LocalObjectReference: corev1.LocalObjectReference{
+                    Name: "chk-proc",
+                  },
+                },
+              },
+            },
 					},
 				},
 			},
