@@ -19,5 +19,6 @@ spec:
           command:
             - /logfilter-controller
             - --fluentbitimage=fluent/fluent-bit:0.14
+            - --metricsimage=[fluentbit-curl-jq]:[tag]
             - --namespace=fluent-bit
       serviceAccountName: logfilter-controller
