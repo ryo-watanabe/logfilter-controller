@@ -83,7 +83,7 @@ const proc_monitoring = `
 [INPUT]
     Name          exec
     Tag           @TAG
-    Command       sh /fluent-bit/etc/chk_proc.sh @PROC_NAME @INTERVAL /host /cache
+    Command       sh /fluent-bit/etc/chk_proc.sh @PROC_NAME /host
     Interval_Sec  @INTERVAL
     Interval_NSec 0
     Parser        json
@@ -149,7 +149,7 @@ func MakeFluentbitConfig(logs , procs, outputs *corev1.ConfigMapList, node_group
         input := proc_monitoring
         input = strings.Replace(input, "@TAG", tag, 1)
         input = strings.Replace(input, "@PROC_NAME", proc_name, 1)
-        input = strings.Replace(input, "@INTERVAL", proc.Data["interval_sec"], 2)
+        input = strings.Replace(input, "@INTERVAL", proc.Data["interval_sec"], 1)
         ins += input
       }
     }

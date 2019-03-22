@@ -1,2 +1,4 @@
 FROM fluent/fluent-bit:0.14
-RUN apt-get update && apt-get -y install curl jq
+RUN apt-get update && apt-get -y install curl jq procps \
+  && mkdir /host \
+  && cp -r /bin /lib /lib64 /usr /host/

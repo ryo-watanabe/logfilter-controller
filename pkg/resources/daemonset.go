@@ -97,8 +97,8 @@ func NewDaemonSet(labels map[string]string, name, namespace, image, tolerations,
                   ReadOnly:  true,
 								},
                 {
-									Name:      "cache-volume",
-									MountPath: "/cache",
+									Name:      "tmp",
+									MountPath: "/tmp",
 								},
 								{
 									Name:      "config",
@@ -163,10 +163,10 @@ func NewDaemonSet(labels map[string]string, name, namespace, image, tolerations,
 							},
 						},
             {
-							Name: "cache-volume",
+							Name: "tmp",
 							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{
-                  Medium: corev1.StorageMediumMemory,
+								HostPath: &corev1.HostPathVolumeSource{
+                  Path: "/tmp",
 								},
 							},
 						},
