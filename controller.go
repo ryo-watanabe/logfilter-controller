@@ -54,6 +54,7 @@ type Controller struct {
 	kubeclientset kubernetes.Interface
 	fluentbitimage string
 	metricsimage string
+	registrykey string
 	namespace string
 	currentfluentbitlua string
 	currentfluentbitmetricconfig string
@@ -65,12 +66,13 @@ type Controller struct {
 // NewController returns a new sample controller
 func NewController(
 	kubeclientset kubernetes.Interface,
-	fluentbitimage, metricsimage, namespace string) *Controller {
+	fluentbitimage, metricsimage, registrykey, namespace string) *Controller {
 
 	controller := &Controller{
 		kubeclientset: kubeclientset,
 		fluentbitimage: fluentbitimage,
 		metricsimage: metricsimage,
+		registrykey: registrykey,
 		namespace: namespace,
 		currentfluentbitlua: "",
 		currentfluentbitmetricconfig: "",
@@ -159,7 +161,7 @@ func (c *Controller) updateDaemonSet(name, config_name string, nodegroup map[str
 	getOptions := metav1.GetOptions{IncludeUninitialized: false}
 	_, err := c.kubeclientset.AppsV1().DaemonSets(c.namespace).Get(name, getOptions)
 	newDaemonSet := resources.NewDaemonSet(c.labels, name, c.namespace,
-		c.fluentbitimage, tolerations, node_selector, config_name)
+		c.fluentbitimage, c.registrykey, tolerations, node_selector, config_name)
 	if errors.IsNotFound(err) {
 		_, err = c.kubeclientset.AppsV1().DaemonSets(c.namespace).Create(newDaemonSet)
 	} else {
@@ -174,7 +176,7 @@ func (c *Controller) updateDaemonSet(name, config_name string, nodegroup map[str
 func (c *Controller) updateDeployment(name, config_name string) error {
 	getOptions := metav1.GetOptions{IncludeUninitialized: false}
 	_, err := c.kubeclientset.AppsV1().Deployments(c.namespace).Get(name, getOptions)
-	newDeployment := resources.NewDeployment(c.metricslabels, name, c.namespace, c.metricsimage, config_name)
+	newDeployment := resources.NewDeployment(c.metricslabels, name, c.namespace, c.metricsimage, c.registrykey, config_name)
 	if errors.IsNotFound(err) {
 		_, err = c.kubeclientset.AppsV1().Deployments(c.namespace).Create(newDeployment)
 	} else {

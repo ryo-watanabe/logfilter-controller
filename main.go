@@ -31,6 +31,7 @@ var (
 	kubeconfig string
 	fluentbitimage string
 	metricsimage string
+	registrykey string
 	namespace string
 )
 
@@ -54,7 +55,7 @@ func main() {
 		klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
 	}
 
-	controller := NewController(kubeClient, fluentbitimage, metricsimage, namespace)
+	controller := NewController(kubeClient, fluentbitimage, metricsimage, registrykey, namespace)
 
 	// notice that there is no need to run Start methods in a separate goroutine. (i.e. go kubeInformerFactory.Start(stopCh)
 	// Start method is non-blocking and runs all registered informers in a dedicated goroutine.
@@ -70,5 +71,6 @@ func init() {
 	flag.StringVar(&masterURL, "master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 	flag.StringVar(&fluentbitimage, "fluentbitimage", "", "Fluent-bit docker image")
 	flag.StringVar(&metricsimage, "metricsimage", "", "Metrics (= Fluent-bit + curl + jq) docker image")
+	flag.StringVar(&registrykey, "registrykey", "", "Local registry key secret name")
 	flag.StringVar(&namespace, "namespace", "default", "Namespace for fluent-bit")
 }

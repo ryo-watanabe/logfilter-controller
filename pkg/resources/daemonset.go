@@ -11,12 +11,20 @@ import (
 
 const layout = "2006-01-02-15-04-05"
 // newDaemonset
-func NewDaemonSet(labels map[string]string, name, namespace, image, tolerations, node_selector, config_name string) *appsv1.DaemonSet {
+func NewDaemonSet(labels map[string]string,
+  name, namespace, image, registrykey, tolerations, node_selector,
+  config_name string) *appsv1.DaemonSet {
+
 	updateLabels := map[string]string{
 		"app": labels["app"],
 		"controller": labels["controller"],
 		"last_restart": time.Now().Format(layout),
 	}
+
+  imagepullsecrets := []corev1.LocalObjectReference{}
+  if registrykey != "" {
+    imagepullsecrets = append(imagepullsecrets, corev1.LocalObjectReference{Name: registrykey})
+  }
 
   tols := []corev1.Toleration{}
   if tolerations != "" {
@@ -118,6 +126,7 @@ func NewDaemonSet(labels map[string]string, name, namespace, image, tolerations,
 							},
 						},
 					},
+          ImagePullSecrets: imagepullsecrets,
           Tolerations: tols,
           NodeSelector: nselector,
           ServiceAccountName: "logfilter-controller",

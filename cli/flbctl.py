@@ -131,8 +131,81 @@ def keylabelchk(yml,keys,label):
             return False
     return True
 
+log_help = """Subject 'log' ConfigMap data:
+
+  log_kind      : k8s_pod_log       ... Tailing logs and add kubernetes.* by kubernetes_metadata_filter.
+                : rke_container_log ... Tailing logs and add container_name by its file name.
+                : syslog            ... Tailing logs and add log_name by file path.
+  path          : Log path to tail. Currently mounted pathes are /var/log and /var/lib/rancher/rke/log only.
+  tag           : Fluent-bit tags, also passed to elasticsearch as '_flb-key'. Asterisk will be replaced by log path.
+
+"""
+logfilter_help = """Subject 'logfilter' ConfigMap data:
+
+  log_kind      : pod_log       ... Corresponding to log input k8s_pod_log.
+                : container_log ... Corresponding to log input rke_container_log.
+                : system_log    ... Corresponding to log input syslog.
+  log_name      : Set container name for pod_log and container_log. Set log file path for system_log.
+  message       : String to ignore/drop.
+                  - Set '@all' to ignore/drop whole lines.
+                  - Set '@startwith:XXXX' to ignore/drop lines start with XXXX.
+                  - Use lua language string format. Hyphens '-' must be typed as '%-'.
+  action        : ignore ... Add 'ignore_alerts' element and send it to elasticsearch.
+                : drop   ... Do not send it to elasticsearch.
+
+"""
+proc_help = """Subject 'proc' ConfigMap data:
+
+  proc_names    : Comma separated process names. Use true command names same as 'ps auxc' output.
+  interval_sec  : Monitoring interval in seconds. Set number as a string like '60'.
+  node_group    : Set a DaemonSet on which node the process will alive by nodegroup name .
+  tag           : Fluent-bit tags, also passed to elasticsearch as '_flb-key'. Asterisk will be replaced by the proccess name.
+
+"""
+metric_help = """Subject 'metric' ConfigMap data:
+
+  metric_kind   : pod  ... Get pod metrics from /apis/metrics.k8s.io/v1beta1/pods.
+                : node ... Get node metrics from /apis/metrics.k8s.io/v1beta1/nodes.
+  interval_sec  : Monitoring interval in seconds. Set number as a string like '60'.
+  tag           : Fluent-bit tags, also passed to elasticsearch as '_flb-key'.
+
+"""
+output_help = """Subject 'output' ConfigMap data:
+
+  host          : Elasticsearch host.
+  port          : Elasticsearch port.
+  index_prefix  : Cluster identifier in elasticsearch indeces. Index will be like '{index_prefix}-2019.01.01'
+  match         : Match tag to send. Set '*' to send all to this output.
+
+"""
+nodegroup_help = """Subject 'nodegroup' ConfigMap data:
+
+  node_selector : Comma separated NodeSelectors for the DaemonSet set as 'node-role.kubernetes.io/[node_selector]=true'.
+  tolerations   : Comma separated Tolerations for the DaemonSet.
+                  - The value 'etcd' is set as effect=NoExecute,key=node-role.kubernetes.io/etcd,value="true".
+                  - The value 'controlplane' is set as effect=NoSchedule,key=node-role.kubernetes.io/controlplane,value="true".
+
+"""
+
+def edit_help(args):
+    if args.subject == "log":
+        print (log_help, end="")
+    if args.subject == "logfilter":
+        print (logfilter_help, end="")
+    if args.subject == "proc":
+        print (proc_help, end="")
+    if args.subject == "metric":
+        print (metric_help, end="")
+    if args.subject == "output":
+        print (output_help, end="")
+    if args.subject == "nodegroup":
+        print (nodegroup_help, end="")
+
 def edit(args,keys,label,create):
     if len(args.name) > 0:
+        if args.name[0] == "help":
+            edit_help(args)
+            return
         if create:
             val = newyaml(args,keys,label)
             ret = 0
@@ -224,8 +297,32 @@ nodegroup_label = "logfilter.ssl.com/nodegroup"
 
 SUBJECTS = []
 
+usage = """flbctl [command] [subject] name
+
+  [command]
+    get       : Show subject's ConfigMap referenced by 'name'. Show list without 'name'.
+    create    : Create a subject with 'name'.
+    delete    : Delete a subject with 'name'.
+    edit      : Edit subject's ConfigMap referenced by 'name'.
+    disable   : Disable (not delete) a subject with 'name'.
+    enable    : Enable a disabled subject with 'name'.
+
+  [subject]
+    all       : Show all subjects with command 'get'.
+    log       : Log inputs. 3 log kinds of k8s_pod_log, rke_container_log and syslog.
+    logfilter : Log filters before sending them to elasticsearch.
+    proc      : Process monitorings.
+    metric    : Pod/Node metrics.
+    output    : Elasticsearch settings.
+    nodegroup : DaemonSets for fluent-bit.
+
+  Type 'flbctl [edit|create] [subject] help' for subject's ConfigMap data.
+
+"""
+epilog = log_help + logfilter_help + proc_help + metric_help + output_help + nodegroup_help
+
 # 引数処理
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(usage=usage,epilog=epilog,formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("command", choices=["get", "delete", "create", "disable", "enable", "edit"], help="command")
 parser.add_argument("subject", choices=["log", "logfilter", "proc", "metric", "output", "nodegroup", "all"], help="subject")
 parser.add_argument("name", nargs="*")

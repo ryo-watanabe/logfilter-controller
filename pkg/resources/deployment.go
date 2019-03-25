@@ -8,13 +8,18 @@ import (
 )
 
 // newDeployment
-func NewDeployment(labels map[string]string, name, namespace, image, config_name string) *appsv1.Deployment {
+func NewDeployment(labels map[string]string, name, namespace, image, registrykey, config_name string) *appsv1.Deployment {
   updateLabels := map[string]string{
 		"app": labels["app"],
 		"controller": labels["controller"],
 		"last_restart": time.Now().Format(layout),
 	}
   var replicas int32 = 1
+
+  imagepullsecrets := []corev1.LocalObjectReference{}
+  if registrykey != "" {
+    imagepullsecrets = append(imagepullsecrets, corev1.LocalObjectReference{Name: registrykey})
+  }
 
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -50,6 +55,7 @@ func NewDeployment(labels map[string]string, name, namespace, image, config_name
 						},
 					},
           ServiceAccountName: "logfilter-controller",
+          ImagePullSecrets: imagepullsecrets,
 					Volumes: []corev1.Volume{
 						{
 							Name: "config",
