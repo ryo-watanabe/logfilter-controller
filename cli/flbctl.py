@@ -149,7 +149,9 @@ logfilter_help = """Subject 'logfilter' ConfigMap data:
   message       : String to ignore/drop.
                   - Set '@all' to ignore/drop whole lines.
                   - Set '@startwith:XXXX' to ignore/drop lines start with XXXX.
-                  - Use lua language string format. Hyphens '-' must be typed as '%-'.
+                  - Use lua language string format.
+                    Lua magic characters ( ) . % + - * ? [ ^ $ must be escaped with '%'
+                    Hyphens '-' escaped like '%-'.
   action        : ignore ... Add 'ignore_alerts' element and send it to elasticsearch.
                 : drop   ... Do not send it to elasticsearch.
 

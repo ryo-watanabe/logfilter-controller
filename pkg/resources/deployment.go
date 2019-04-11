@@ -48,8 +48,7 @@ func NewDeployment(labels map[string]string, name, namespace, image, registrykey
 								},
                 {
 									Name:      "lua",
-									MountPath: "/fluent-bit/etc/fluent-bit-metrics.lua",
-                  SubPath:   "fluent-bit-metrics.lua",
+									MountPath: "/fluent-bit/metrics",
 								},
 							},
 						},

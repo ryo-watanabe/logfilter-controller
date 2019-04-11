@@ -114,14 +114,12 @@ func NewDaemonSet(labels map[string]string,
                   SubPath:   "fluent-bit.conf",
 								},
                 {
-									Name:      "lua",
-									MountPath: "/fluent-bit/etc/funcs.lua",
-                  SubPath:   "funcs.lua",
+									Name:      "filter",
+									MountPath: "/fluent-bit/filter",
 								},
                 {
-									Name:      "chk-proc",
-									MountPath: "/fluent-bit/etc/chk_proc.sh",
-                  SubPath:   "chk_proc.sh",
+									Name:      "os-chk-scripts",
+									MountPath: "/fluent-bit/os",
 								},
 							},
 						},
@@ -190,7 +188,7 @@ func NewDaemonSet(labels map[string]string,
 							},
 						},
 						{
-							Name: "lua",
+							Name: "filter",
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -200,11 +198,11 @@ func NewDaemonSet(labels map[string]string,
 							},
 						},
             {
-              Name: "chk-proc",
+              Name: "os-chk-scripts",
               VolumeSource: corev1.VolumeSource{
                 ConfigMap: &corev1.ConfigMapVolumeSource{
                   LocalObjectReference: corev1.LocalObjectReference{
-                    Name: "chk-proc",
+                    Name: "os-chk-scripts",
                   },
                 },
               },

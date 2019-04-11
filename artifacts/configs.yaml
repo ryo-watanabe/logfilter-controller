@@ -87,6 +87,26 @@ data:
   node_group: master
   tag: proc.*
 ---
+#### OS Monitorings ####
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: input-os
+  namespace: fluent-bit
+  labels:
+    logfilter.ssl.com/os: "true"
+data:
+  cpu_tag: os.cpu
+  cpu_interval_sec: "60"
+  memory_tag: os.memory
+  memory_interval_sec: "60"
+  io_tag: os.io
+  io_interval_sec: "60"
+  io_diskname: sda
+  filesystem_tag: os.filesystem
+  filesystem_interval_sec: "300"
+  filesystem_df_dir: "/"
+---
 #### Pod/Node Metrics ####
 apiVersion: v1
 kind: ConfigMap

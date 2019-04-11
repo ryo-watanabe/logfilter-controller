@@ -206,6 +206,7 @@ func (c *Controller) syncHandler() error {
 		}
 		c.currentfluentbitlua = configmap.Data["funcs.lua"]
 		luaupdated = true
+		klog.Info("Logfilter updated.")
 	}
 
   // Load/update configmaps
@@ -221,6 +222,10 @@ func (c *Controller) syncHandler() error {
 	if err != nil {
 		return err
 	}
+	os_monits, err := c.loadConfigMaps("logfilter.ssl.com/os")
+	if err != nil {
+		return err
+	}
 	metrics, err := c.loadConfigMaps("logfilter.ssl.com/metric")
 	if err != nil {
 		return err
@@ -233,7 +238,7 @@ func (c *Controller) syncHandler() error {
   // Log, Proc fluent-bit daemonsets for node groups
 	for _, nodegroup := range nodegroups.Items {
 		group := nodegroup.ObjectMeta.Name
-		cfg := fluentbitcfg.MakeFluentbitConfig(logs, procs, outputs, group)
+		cfg := fluentbitcfg.MakeFluentbitConfig(logs, procs, os_monits, outputs, group)
 
 		configupdated := false
 		_, ok := c.currentfluentbitconfig[group]

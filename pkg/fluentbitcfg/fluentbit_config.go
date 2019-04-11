@@ -6,121 +6,9 @@ import (
   corev1 "k8s.io/api/core/v1"
 )
 
-const fluentbit_config = `[SERVICE]
-    Flush        1
-    Daemon       Off
-    Log_Level    error
-    Parsers_File parsers.conf
-@INPUTS@FILTERS@OUTPUTS
-`
-const hostname_filter = `
-[FILTER]
-    Name record_modifier
-    Match *
-    Record hostname ${HOSTNAME}
-`
-const metrics_filter = `
-[FILTER]
-    Name lua
-    Match metrics.*
-    script /fluent-bit/etc/fluent-bit-metrics.lua
-    call cpu_memory_in_number
-`
-const ignore_filter = `
-[FILTER]
-    Name lua
-    Match *
-    script /fluent-bit/etc/funcs.lua
-    call ignore_message
-`
-const k8s_pod_log = `
-[INPUT]
-    Name             tail
-    Path             @PATH
-    DB               /var/log/containers/fluent-bit.kube.db
-    Parser           docker
-    Tag              @TAG
-    Refresh_Interval 5
-    Mem_Buf_Limit    5MB
-    Skip_Long_Lines  On
-
-[FILTER]
-    Name             kubernetes
-    Match            @TAG
-    Kube_URL         https://kubernetes.default.svc:443
-    Kube_CA_File     /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-    Kube_Token_File  /var/run/secrets/kubernetes.io/serviceaccount/token
-`
-const rke_container_log = `
-[INPUT]
-    Name             tail
-    Path             @PATH
-    DB               /var/lib/rancher/rke/log/fluent-bit.rke.db
-    Parser           docker
-    Tag              @TAG
-    Refresh_Interval 5
-    Mem_Buf_Limit    5MB
-    Skip_Long_Lines  On
-
-[FILTER]
-    Name   lua
-    Match  @TAG
-    script /fluent-bit/etc/funcs.lua
-    call   add_record
-`
-const syslog = `
-[INPUT]
-    Name             tail
-    Path             @PATH
-    DB               /var/log/fluent-bit.syslog.db
-    Path_Key         log_name
-    Tag              @TAG
-    Refresh_Interval 5
-    Mem_Buf_Limit    5MB
-    Skip_Long_Lines  On
-`
-const proc_monitoring = `
-[INPUT]
-    Name          exec
-    Tag           @TAG
-    Command       sh /fluent-bit/etc/chk_proc.sh @PROC_NAME /host
-    Interval_Sec  @INTERVAL
-    Interval_NSec 0
-    Parser        json
-`
-const pod_metrics = `
-[INPUT]
-    Name          exec
-    Tag           @TAG
-    Command       curl -k https://kubernetes.default.svc/apis/metrics.k8s.io/v1beta1/pods?pretty=false -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" | jq '.items[] as $pod | $pod.containers[] as $container | {name:$pod.metadata.name, container:$container.name, cpu:$container.usage.cpu, memory:$container.usage.memory, namespace:$pod.metadata.namespace} |@json' -r
-    Interval_Sec  @INTERVAL
-    Interval_NSec 0
-    Parser        json
-`
-const node_metrics = `
-[INPUT]
-    Name          exec
-    Tag           @TAG
-    Command       curl -k https://kubernetes.default.svc/apis/metrics.k8s.io/v1beta1/nodes?pretty=false -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" | jq '.items[] | {name:.metadata.name, cpu:.usage.cpu, memory:.usage.memory} |@json' -r
-    Interval_Sec  @INTERVAL
-    Interval_NSec 0
-    Parser        json
-`
-const es_output = `
-[OUTPUT]
-    Name            es
-    Match           @MATCH
-    Host            @HOST
-    Port            @PORT
-    Logstash_Format On
-    Retry_Limit     False
-    Type            flb_type
-    Include_Tag_key On
-    Logstash_Prefix @PREFIX
-`
 
 // Make fluent-bit.conf for DaemonSet
-func MakeFluentbitConfig(logs , procs, outputs *corev1.ConfigMapList, node_group string) map[string]string {
+func MakeFluentbitConfig(logs , procs, os_monits, outputs *corev1.ConfigMapList, node_group string) map[string]string {
     ins := ""
     // Log inputs
     for _, log := range logs.Items {
@@ -152,6 +40,39 @@ func MakeFluentbitConfig(logs , procs, outputs *corev1.ConfigMapList, node_group
         input = strings.Replace(input, "@INTERVAL", proc.Data["interval_sec"], 1)
         ins += input
       }
+    }
+		// OS Monitorings
+    for _, monit := range os_monits.Items {
+			// cpu
+			if monit.Data["cpu_tag"] != "" {
+				input := os_cpu
+	      input = strings.Replace(input, "@INTERVAL", monit.Data["cpu_interval_sec"], 1)
+				input = strings.Replace(input, "@TAG", monit.Data["cpu_tag"], 1)
+	      ins += input
+			}
+			// memory
+			if monit.Data["memory_tag"] != "" {
+				input := os_memory
+	      input = strings.Replace(input, "@INTERVAL", monit.Data["memory_interval_sec"], 1)
+				input = strings.Replace(input, "@TAG", monit.Data["memory_tag"], 1)
+	      ins += input
+			}
+			// disk io
+			if monit.Data["io_tag"] != "" {
+				input := os_io
+	      input = strings.Replace(input, "@INTERVAL", monit.Data["io_interval_sec"], 1)
+				input = strings.Replace(input, "@NAME", monit.Data["io_diskname"], 1)
+				input = strings.Replace(input, "@TAG", monit.Data["io_tag"], 1)
+	      ins += input
+			}
+			// filesystem usage
+			if monit.Data["filesystem_tag"] != "" {
+				input := os_filesystem
+	      input = strings.Replace(input, "@INTERVAL", monit.Data["filesystem_interval_sec"], 1)
+				input = strings.Replace(input, "@DIR", monit.Data["filesystem_df_dir"], 1)
+				input = strings.Replace(input, "@TAG", monit.Data["filesystem_tag"], 1)
+	      ins += input
+			}
     }
     // Outputs
     outs := ""
