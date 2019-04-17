@@ -314,7 +314,7 @@ usage = """flbctl [command] [subject] name
     proc      : Process monitorings.
     metric    : Pod/Node metrics.
     output    : Elasticsearch settings.
-    nodegroup : DaemonSets for hatoba-monitoring.
+    nodegroup : DaemonSets for fluent-bit.
 
   Type 'flbctl [edit|create] [subject] help' for subject's ConfigMap data.
 
