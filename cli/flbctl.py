@@ -326,7 +326,7 @@ parser = argparse.ArgumentParser(usage=usage,epilog=epilog,formatter_class=argpa
 parser.add_argument("command", choices=["get", "delete", "create", "disable", "enable", "edit"], help="command")
 parser.add_argument("subject", choices=["log", "logfilter", "proc", "metric", "output", "nodegroup", "all"], help="subject")
 parser.add_argument("name", nargs="*")
-parser.add_argument("--namespace", "-n", default="hatoba-monitoring", help="namespace")
+parser.add_argument("--namespace", "-n", default="fluent-bit", help="namespace")
 parser.add_argument("--debug", "-v", action="store_true", help="debug output")
 args = parser.parse_args()
 if args.debug:
