@@ -72,7 +72,7 @@ def table(l,keys,lb):
     return table
 
 def get_yaml(args):
-    (ret, val) = localCommand("kubectl get cm " + args.name[0] + " -o yaml -n fluent-bit")
+    (ret, val) = localCommand("kubectl get cm " + args.name[0] + " -o yaml -n " + args.namespace)
     yaml = ""
     if ret == 0:
         lines = val.splitlines()
@@ -93,7 +93,7 @@ def get_yaml(args):
 def get_data(args):
     if len(args.name) == 0:
         return (1, "Name not supplied.")
-    (ret, val) = localCommand("kubectl get cm -o json -n fluent-bit " + args.name[0])
+    (ret, val) = localCommand("kubectl get cm -n " + args.namespace + " -o json " + args.name[0])
     if ret == 0:
         return (0, json.loads(val))
     else:
@@ -104,7 +104,7 @@ def get(args,keys,label):
         (ret, val) = get_yaml(args)
         print (val, end="")
     else:
-        (ret, val) = localCommand("kubectl get cm -o json -n fluent-bit")
+        (ret, val) = localCommand("kubectl get cm -o json -n " + args.namespace)
         if ret == 0:
             data = json.loads(val)
             t = table(data["items"], keys, label)
@@ -116,7 +116,7 @@ def newyaml(args,keys,label):
     yml = "apiVersion: v1\nkind: ConfigMap\nmetadata:\n"
     yml += "  labels:\n    " + label + ': "true"\n'
     yml += "  name: " + args.name[0] + '\n'
-    yml += "  namespace: fluent-bit\ndata:\n"
+    yml += "  namespace: " + args.namespace + "\ndata:\n"
     for k in keys:
         if k[2] == "name":
             continue
@@ -149,9 +149,7 @@ logfilter_help = """Subject 'logfilter' ConfigMap data:
   message       : String to ignore/drop.
                   - Set '@all' to ignore/drop whole lines.
                   - Set '@startwith:XXXX' to ignore/drop lines start with XXXX.
-                  - Use lua language string format.
-                    Lua magic characters ( ) . % + - * ? [ ^ $ must be escaped with '%'
-                    Hyphens '-' escaped like '%-'.
+                  - Use lua language string format. Hyphens '-' must be typed as '%-'.
   action        : ignore ... Add 'ignore_alerts' element and send it to elasticsearch.
                 : drop   ... Do not send it to elasticsearch.
 
@@ -233,7 +231,7 @@ def edit(args,keys,label,create):
                     if not keylabelchk(yml,keys,label):
                         print ("Error : label or keys not matched.")
                         return
-                    (ret, val) = localCommand("kubectl apply -f " + tf.name)
+                    (ret, val) = localCommand("kubectl apply -f " + tf.name + " -n " + args.namespace)
                     print (val, end="")
         else:
             print (val, end="")
@@ -243,7 +241,7 @@ def edit(args,keys,label,create):
 def label_patch(args,label,value):
     if len(args.name) == 0:
         print ("Error : Subject name not given.")
-    (ret, val) = localCommand("kubectl patch cm -n fluent-bit -p {\"metadata\":{\"labels\":{\"" + label + "\":\"" + value + "\"}}} " + args.name[0])
+    (ret, val) = localCommand("kubectl patch cm -n " + args.namespace + " -p {\"metadata\":{\"labels\":{\"" + label + "\":\"" + value + "\"}}} " + args.name[0])
     print (val, end="")
 
 # log inputs
@@ -284,7 +282,7 @@ logfilter_label = "logfilter.ssl.com/filterdata"
 output_keys = [
     ["NAME","metadata","name","output-es"],
     ["MATCH","data","match","'*'"],
-    ["HOST","data","host","elasticsearch.fluent-bit.svc"],
+    ["HOST","data","host","elasticsearch.ns.svc"],
     ["PORT","data","port",'"9200"'],
     ["INDEX_PREFIX","data","index_prefix","k8s_cluster"]
 ]
@@ -316,18 +314,19 @@ usage = """flbctl [command] [subject] name
     proc      : Process monitorings.
     metric    : Pod/Node metrics.
     output    : Elasticsearch settings.
-    nodegroup : DaemonSets for fluent-bit.
+    nodegroup : DaemonSets for hatoba-monitoring.
 
   Type 'flbctl [edit|create] [subject] help' for subject's ConfigMap data.
 
 """
 epilog = log_help + logfilter_help + proc_help + metric_help + output_help + nodegroup_help
 
-# 引数処理
+# ř
 parser = argparse.ArgumentParser(usage=usage,epilog=epilog,formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("command", choices=["get", "delete", "create", "disable", "enable", "edit"], help="command")
 parser.add_argument("subject", choices=["log", "logfilter", "proc", "metric", "output", "nodegroup", "all"], help="subject")
 parser.add_argument("name", nargs="*")
+parser.add_argument("--namespace", "-n", default="hatoba-monitoring", help="namespace")
 parser.add_argument("--debug", "-v", action="store_true", help="debug output")
 args = parser.parse_args()
 if args.debug:
@@ -394,7 +393,7 @@ if args.command == "get":
 if args.command == "delete":
     if len(args.name) == 0:
         print ("Error : Subject name not given.")
-    (ret, val) = localCommand("kubectl delete cm -n fluent-bit " + args.name[0])
+    (ret, val) = localCommand("kubectl delete cm " + args.name[0] + " -n " + args.namespace)
     print (val, end="")
 
 # enable/disable
