@@ -132,6 +132,19 @@ data:
   interval_sec: "60"
   tag: metrics.node
 ---
+#### k8s Apps Status ####
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: input-apps-status
+  namespace: fluent-bit
+  labels:
+    logfilter.ssl.com/app: "true"
+data:
+  app_kinds: deployments,daemonsets,statefulsets
+  interval_sec: "60"
+  tag: apps.*
+---
 #### Outputs ####
 apiVersion: v1
 kind: ConfigMap

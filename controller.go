@@ -230,6 +230,10 @@ func (c *Controller) syncHandler() error {
 	if err != nil {
 		return err
 	}
+	apps, err := c.loadConfigMaps("logfilter.ssl.com/app")
+	if err != nil {
+		return err
+	}
 	outputs, err := c.loadConfigMaps("logfilter.ssl.com/es")
 	if err != nil {
 		return err
@@ -261,7 +265,7 @@ func (c *Controller) syncHandler() error {
 	}
 
   // Metrics fluent-bit deployment.
-	metricscfg := fluentbitcfg.MakeFluentbitMetricsConfig(metrics, outputs)
+	metricscfg := fluentbitcfg.MakeFluentbitMetricsConfig(metrics, apps, outputs)
 	if metricscfg["fluent-bit.conf"] != c.currentfluentbitmetricconfig {
 		configmap, err := c.updateConfigMap("fluentbit-metrics-config", metricscfg)
 		if err != nil {

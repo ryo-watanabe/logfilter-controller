@@ -145,6 +145,35 @@ const node_metrics = `
     Interval_NSec 0
     Parser        json
 `
+// k8s app status
+const deployment_status = `
+[INPUT]
+    Name          exec
+    Tag           @TAG
+    Command       curl -k https://kubernetes.default.svc/apis/apps/v1/deployments?pretty=false -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" | jq '.items[] as $app | (if $app.status.replicas != null then $app.status.replicas else 0 end) as $desired | (if $app.status.readyReplicas != null then $app.status.readyReplicas else 0 end) as $ready | {name:$app.metadata.name, namespace:$app.metadata.namespace, desired:$desired, ready:$ready, notready:($desired - $ready)} |@json' -r
+    Interval_Sec  @INTERVAL
+    Interval_NSec 0
+    Parser        json
+`
+const statefulset_status = `
+[INPUT]
+    Name          exec
+    Tag           @TAG
+    Command       curl -k https://kubernetes.default.svc/apis/apps/v1/statefulsets?pretty=false -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" | jq '.items[] as $app | (if $app.status.replicas != null then $app.status.replicas else 0 end) as $desired | (if $app.status.readyReplicas != null then $app.status.readyReplicas else 0 end) as $ready | {name:$app.metadata.name, namespace:$app.metadata.namespace, desired:$desired, ready:$ready, notready:($desired - $ready)} |@json' -r
+
+    Interval_Sec  @INTERVAL
+    Interval_NSec 0
+    Parser        json
+`
+const daemonset_status = `
+[INPUT]
+    Name          exec
+    Tag           @TAG
+    Command       curl -k https://kubernetes.default.svc/apis/apps/v1/daemonsets?pretty=false -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" | jq '.items[] as $app | (if $app.status.desiredNumberScheduled != null then $app.status.desiredNumberScheduled else 0 end) as $desired | (if $app.status.numberReady != null then $app.status.numberReady else 0 end) as $ready | {name:$app.metadata.name, namespace:$app.metadata.namespace, desired:$desired, ready:$ready, notready:($desired - $ready)} |@json' -r
+    Interval_Sec  @INTERVAL
+    Interval_NSec 0
+    Parser        json
+`
 // output
 const es_output = `
 [OUTPUT]
