@@ -136,7 +136,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: input-apps-status
+  name: input-app-statuses
   namespace: fluent-bit
   labels:
     logfilter.ssl.com/app: "true"
