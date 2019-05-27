@@ -186,6 +186,27 @@ nodegroup_help = """Subject 'nodegroup' ConfigMap data:
                   - The value 'controlplane' is set as effect=NoSchedule,key=node-role.kubernetes.io/controlplane,value="true".
 
 """
+osmon_help = """Subject 'osmon' ConfigMap data:
+
+  cpu_interval_sec        : Monitoring cpu interval in seconds. Set number as a string like '60'.
+  cpu_tag                 : Fluent-bit tags, also passed to elasticsearch as '_flb-key'.
+  memory_interval_sec     : Monitoring memory interval in seconds. Set number as a string like '60'.
+  memory_tag              : Fluent-bit tags, also passed to elasticsearch as '_flb-key'.
+  filesystem_df_dir       : Set directory name.
+  filesystem_interval_sec : Monitoring filesystem interval in seconds. Set number as a string like '60'.
+  filesystem_tag          : Fluent-bit tags, also passed to elasticsearch as '_flb-key'.
+  io_diskname             : Set device name
+  io_interval_sec         : Monitoring io interval in seconds. Set number as a string like '60'.
+  io_tag                  : Fluent-bit tags, also passed to elasticsearch as '_flb-key'.
+
+"""
+app_help = """Subject 'app' ConfigMap data:
+
+  app_kinds        : Comma separated k8s app kinds to monitor. To set all type 'deployments,daemonsets,statefulsets'.
+  interval_sec     : Monitoring in seconds. Set number as a string like '60'.
+  tag              : Fluent-bit tags, also passed to elasticsearch as '_flb-key'. Asterisk will be replaced by app kinds.
+
+"""
 
 def edit_help(args):
     if args.subject == "log":
@@ -200,6 +221,10 @@ def edit_help(args):
         print (output_help, end="")
     if args.subject == "nodegroup":
         print (nodegroup_help, end="")
+    if args.subject == "osmon":
+        print (osmon_help, end="")
+    if args.subject == "app":
+        print (app_help, end="")
 
 def edit(args,keys,label,create):
     if len(args.name) > 0:
@@ -294,6 +319,29 @@ nodegroup_keys = [
     ["NODE_SELECTOR","data","node_selector","controlplane"]
 ]
 nodegroup_label = "logfilter.ssl.com/nodegroup"
+# OS monitoring
+osmon_keys = [
+    ["NAME","metadata","name"],
+    ["CPU_INTERVAL_SEC","data","cpu_interval_sec",'"60"'],
+    ["CPU_TAG","data","cpu_tag","os.cpu"],
+    ["MEM_INTERVAL_SEC","data","memory_interval_sec",'"60"'],
+    ["MEM_TAG","data","memory_tag","os.memory"],
+    ["FS_DF_DIR","data","filesystem_df_dir",'/'],
+    ["FS_INTERVAL_SEC","data","filesystem_interval_sec",'"300"'],
+    ["FS_TAG","data","filesystem_tag","os.filesystem"],
+    ["IO_DISKNAME","data","io_diskname","sda"],
+    ["IO_INTERVAL_SEC","data","io_interval_sec",'"60"'],
+    ["IO_TAG","data","io_tag","os.io"]
+]
+osmon_label = "logfilter.ssl.com/os"
+# apps
+app_keys = [
+    ["NAME","metadata","name","input-app-statuses"],
+    ["APP_KINDS","data","app_kinds","deployments,daemonsets,statefulsets"],
+    ["INTERVAL_SEC","data","interval_sec",'"60"'],
+    ["TAG","data","tag","apps.*"]
+]
+app_label = "logfilter.ssl.com/app"
 
 SUBJECTS = []
 
@@ -314,17 +362,19 @@ usage = """flbctl [command] [subject] name
     proc      : Process monitorings.
     metric    : Pod/Node metrics.
     output    : Elasticsearch settings.
-    nodegroup : DaemonSets for fluent-bit.
+    nodegroup : DaemonSets for hatoba-monitoring.
+    osmon     : OS monitoring.
+    app       : K8s apps monitoring.
 
   Type 'flbctl [edit|create] [subject] help' for subject's ConfigMap data.
 
 """
-epilog = log_help + logfilter_help + proc_help + metric_help + output_help + nodegroup_help
+epilog = log_help + logfilter_help + proc_help + metric_help + output_help + nodegroup_help + osmon_help
 
-# ř
+# arguments
 parser = argparse.ArgumentParser(usage=usage,epilog=epilog,formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("command", choices=["get", "delete", "create", "disable", "enable", "edit"], help="command")
-parser.add_argument("subject", choices=["log", "logfilter", "proc", "metric", "output", "nodegroup", "all"], help="subject")
+parser.add_argument("subject", choices=["log", "logfilter", "proc", "metric", "output", "nodegroup", "osmon", "app", "all"], help="subject")
 parser.add_argument("name", nargs="*")
 parser.add_argument("--namespace", "-n", default="fluent-bit", help="namespace")
 parser.add_argument("--debug", "-v", action="store_true", help="debug output")
@@ -353,6 +403,12 @@ if args.command == "edit" or args.command == "create":
 
     if args.subject == "nodegroup":
         edit(args,nodegroup_keys,nodegroup_label,create)
+
+    if args.subject == "osmon":
+        edit(args,osmon_keys,osmon_label,create)
+
+    if args.subject == "app":
+        edit(args,app_keys,app_label,create)
 
 # get
 if args.command == "get":
@@ -389,6 +445,16 @@ if args.command == "get":
             print (GREEN + "Node groups" + ENDC)
         get(args,nodegroup_keys,nodegroup_label)
 
+    if args.subject == "osmon" or all:
+        if all:
+            print (GREEN + "OS monitoring" + ENDC)
+        get(args,osmon_keys,osmon_label)
+
+    if args.subject == "app" or all:
+        if all:
+            print (GREEN + "K8s apps monitoring" + ENDC)
+        get(args,app_keys,app_label)
+
 # delete
 if args.command == "delete":
     if len(args.name) == 0:
@@ -420,5 +486,11 @@ if args.command == "enable" or args.command == "disable":
 
     if args.subject == "nodegroup":
         label_patch(args, nodegroup_label, enabled)
+
+    if args.subject == "osmon":
+        label_patch(args, osmon_label, enabled)
+
+    if args.subject == "app":
+        label_patch(args, app_label, enabled)
 
 exit(0)
