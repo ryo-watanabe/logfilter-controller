@@ -362,7 +362,7 @@ usage = """flbctl [command] [subject] name
     proc      : Process monitorings.
     metric    : Pod/Node metrics.
     output    : Elasticsearch settings.
-    nodegroup : DaemonSets for hatoba-monitoring.
+    nodegroup : DaemonSets for fluent-bit.
     osmon     : OS monitoring.
     app       : K8s apps monitoring.
 
