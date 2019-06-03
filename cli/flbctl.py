@@ -369,7 +369,7 @@ usage = """flbctl [command] [subject] name
   Type 'flbctl [edit|create] [subject] help' for subject's ConfigMap data.
 
 """
-epilog = log_help + logfilter_help + proc_help + metric_help + output_help + nodegroup_help + osmon_help
+epilog = log_help + logfilter_help + proc_help + metric_help + output_help + nodegroup_help + osmon_help + app_help
 
 # arguments
 parser = argparse.ArgumentParser(usage=usage,epilog=epilog,formatter_class=argparse.RawDescriptionHelpFormatter)
