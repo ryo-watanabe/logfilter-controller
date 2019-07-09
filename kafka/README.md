@@ -110,6 +110,29 @@ env:
 ```
 curl -XPOST -H "Content-type: application/json" http://confluent-cp-kafka-connect.kafka:8083/connectors -d @kafka/es-connect.json
 ```
+es-connect.json (example)
+```
+{
+  "name": "elasticsearch-sink",
+  "config": {
+    "connector.class": "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
+    "tasks.max": "1",
+    "flush.timeout.ms": "60000",
+    "read.timeout.ms": "10000",
+    "topics.regex": "es_.*",
+    "transforms": "TimestampRouter",
+    "transforms.TimestampRouter.type": "org.apache.kafka.connect.transforms.TimestampRouter",
+    "transforms.TimestampRouter.topic.format": "${topic}-${timestamp}",
+    "transforms.TimestampRouter.timestamp.format": "yyyy.MM.dd",
+    "key.ignore": "true",
+    "schema.ignore": "true",
+    "connection.url": "http://elasticsearch:9200",
+    "type.name": "kafka-connect",
+    "name": "elasticsearch-sink"
+  }
+}
+```
+Topics which has prefix 'es_' will be transfered to ES as index es_XXXXX-yyyy.MM.dd
 ## Check kafka broker
 ```
 $ kubectl apply -f kafka/testclient.yaml
@@ -156,7 +179,7 @@ data:
   match: "*"
   brokers: 10.10.10.1:9093,10.10.10.2:9093,10.10.10.3:9093
   timestamp_format: iso8601
-  topics: cluster01
+  topics: es_cluster01
   rdkafka_options: ssl.key.location=/certs/private-key.pem,ssl.certificate.location=/certs/cert-signed.pem,ssl.ca.location=/certs/ca-cert.pem,ssl.key.password=kafka1234,security.protocol=ssl
 ```
 will be set in fluent-bit.conf as below...
@@ -166,7 +189,7 @@ will be set in fluent-bit.conf as below...
     Match       *
     Timestamp_Format iso8601
     Brokers     10.10.10.1:9093,10.10.10.2:9093,10.10.10.3:9093
-    Topics      test-elasticsearch-sink
+    Topics      es_cluster01
     rdkafka.ssl.key.location         /certs/private-key.pem
     rdkafka.ssl.certificate.location /certs/cert-signed.pem
     rdkafka.ssl.ca.location          /certs/ca-cert.pem
