@@ -20,5 +20,7 @@ spec:
             - /logfilter-controller
             - --fluentbitimage=[fluentbit-curl-jq]:[tag]
             - --metricsimage=[fluentbit-curl-jq]:[tag]
+            - --kafkasecret=kafka-client-cert
+            - --kafkasecretpath=/fluent-bit/kafka/certs
             - --namespace=fluent-bit
       serviceAccountName: logfilter-controller

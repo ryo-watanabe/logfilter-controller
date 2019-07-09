@@ -21,6 +21,12 @@ SYSTEM_LOG_FILTERS
   return 1, timestamp, record
 end
 
+function add_flb_key(tag, timestamp, record)
+  new_record = record
+  new_record["_flb-key"] = tag
+  return 1, timestamp, new_record
+end
+
 function add_record(tag, timestamp, record)
   new_record = record
   new_record["container_name"] = string.match( tag, "rke.var.lib.rancher.rke.log.(.*)_%w*.log" )

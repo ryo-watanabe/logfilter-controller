@@ -1,0 +1,19 @@
+{
+  "name": "elasticsearch-sink",
+  "config": {
+    "connector.class": "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
+    "tasks.max": "1",
+    "flush.timeout.ms": "60000",
+    "read.timeout.ms": "10000",
+    "topics.regex": "es_.*",
+    "transforms": "TimestampRouter",
+    "transforms.TimestampRouter.type": "org.apache.kafka.connect.transforms.TimestampRouter",
+    "transforms.TimestampRouter.topic.format": "${topic}-${timestamp}",
+    "transforms.TimestampRouter.timestamp.format": "yyyy.MM.dd",
+    "key.ignore": "true",
+    "schema.ignore": "true",
+    "connection.url": "http://elasticsearch:9200",
+    "type.name": "kafka-connect",
+    "name": "elasticsearch-sink"
+  }
+}

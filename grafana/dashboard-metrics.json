@@ -1,8 +1,8 @@
 {
   "__inputs": [
     {
-      "name": "DS_CLUSTER02",
-      "label": "cluster02",
+      "name": "DS_ES",
+      "label": "es",
       "description": "",
       "type": "datasource",
       "pluginId": "elasticsearch",
@@ -46,7 +46,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1558925442388,
+  "iteration": 1562652449767,
   "links": [],
   "panels": [
     {
@@ -67,7 +67,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 1,
       "gridPos": {
         "h": 11,
@@ -198,7 +198,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 1,
       "gridPos": {
         "h": 11,
@@ -328,7 +328,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 1,
       "gridPos": {
         "h": 9,
@@ -446,7 +446,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 1,
       "gridPos": {
         "h": 9,
@@ -611,7 +611,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 1,
       "gridPos": {
         "h": 7,
@@ -773,7 +773,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 1,
       "gridPos": {
         "h": 7,
@@ -901,7 +901,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 1,
       "gridPos": {
         "h": 7,
@@ -1067,7 +1067,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 1,
       "gridPos": {
         "h": 7,
@@ -1207,7 +1207,7 @@
       "cacheTimeout": null,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 1,
       "gridPos": {
         "h": 7,
@@ -1336,7 +1336,7 @@
       "cacheTimeout": null,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 1,
       "gridPos": {
         "h": 7,
@@ -1498,7 +1498,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 0,
       "gridPos": {
         "h": 7,
@@ -1638,7 +1638,7 @@
       "cacheTimeout": null,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 1,
       "gridPos": {
         "h": 7,
@@ -1767,7 +1767,7 @@
       "cacheTimeout": null,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 1,
       "gridPos": {
         "h": 7,
@@ -1942,7 +1942,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 1,
       "gridPos": {
         "h": 8,
@@ -2103,7 +2103,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 1,
       "gridPos": {
         "h": 8,
@@ -2229,7 +2229,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 5,
       "gridPos": {
         "h": 8,
@@ -2498,7 +2498,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 1,
       "gridPos": {
         "h": 8,
@@ -2624,7 +2624,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_CLUSTER02}",
+      "datasource": "${DS_ES}",
       "fill": 1,
       "gridPos": {
         "h": 8,
@@ -2763,7 +2763,7 @@
       {
         "allValue": "*",
         "current": {},
-        "datasource": "${DS_CLUSTER02}",
+        "datasource": "${DS_ES}",
         "definition": "{\"find\": \"terms\", \"field\": \"namespace.keyword\"}",
         "hide": 0,
         "includeAll": true,
@@ -2785,7 +2785,7 @@
       {
         "allValue": null,
         "current": {},
-        "datasource": "${DS_CLUSTER02}",
+        "datasource": "${DS_ES}",
         "definition": "{\"find\": \"terms\", \"field\": \"hostname.keyword\"}",
         "hide": 0,
         "includeAll": true,
@@ -2836,7 +2836,7 @@
     ]
   },
   "timezone": "",
-  "title": "cluster02 k8s metrics",
-  "uid": "y70a_bwik",
-  "version": 19
+  "title": "clusterES k8s metrics",
+  "uid": "y70a_bwip",
+  "version": 2
 }

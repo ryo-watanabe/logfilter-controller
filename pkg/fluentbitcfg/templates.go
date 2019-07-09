@@ -32,6 +32,13 @@ const ignore_filter = `
     script /fluent-bit/filter/funcs.lua
     call ignore_message
 `
+const tagkey_filter = `
+[FILTER]
+    Name lua
+    Match *
+    script /fluent-bit/filter/funcs.lua
+    call add_flb_key
+`
 // log inputs
 const k8s_pod_log = `
 [INPUT]
@@ -131,7 +138,7 @@ const pod_metrics = `
 [INPUT]
     Name          exec
     Tag           @TAG
-    Command       curl -k https://kubernetes.default.svc/apis/metrics.k8s.io/v1beta1/pods?pretty=false -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" | jq '.items[] as $pod | $pod.containers[] as $container | {name:$pod.metadata.name, container:$container.name, cpu:$container.usage.cpu, memory:$container.usage.memory, namespace:$pod.metadata.namespace} |@json' -r
+    Command       curl -k -s https://kubernetes.default.svc/apis/metrics.k8s.io/v1beta1/pods?pretty=false -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" | jq '.items[] as $pod | $pod.containers[] as $container | {name:$pod.metadata.name, container:$container.name, cpu:$container.usage.cpu, memory:$container.usage.memory, namespace:$pod.metadata.namespace} |@json' -r
     Interval_Sec  @INTERVAL
     Interval_NSec 0
     Parser        json
@@ -140,7 +147,7 @@ const node_metrics = `
 [INPUT]
     Name          exec
     Tag           @TAG
-    Command       curl -k https://kubernetes.default.svc/apis/metrics.k8s.io/v1beta1/nodes?pretty=false -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" | jq '.items[] | {name:.metadata.name, cpu:.usage.cpu, memory:.usage.memory} |@json' -r
+    Command       curl -k -s https://kubernetes.default.svc/apis/metrics.k8s.io/v1beta1/nodes?pretty=false -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" | jq '.items[] | {name:.metadata.name, cpu:.usage.cpu, memory:.usage.memory} |@json' -r
     Interval_Sec  @INTERVAL
     Interval_NSec 0
     Parser        json
@@ -150,7 +157,7 @@ const deployment_status = `
 [INPUT]
     Name          exec
     Tag           @TAG
-    Command       curl -k https://kubernetes.default.svc/apis/apps/v1/deployments?pretty=false -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" | jq '.items[] as $app | (if $app.status.replicas != null then $app.status.replicas else 0 end) as $desired | (if $app.status.readyReplicas != null then $app.status.readyReplicas else 0 end) as $ready | {name:$app.metadata.name, namespace:$app.metadata.namespace, desired:$desired, ready:$ready, notready:($desired - $ready)} |@json' -r
+    Command       curl -k -s https://kubernetes.default.svc/apis/apps/v1/deployments?pretty=false -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" | jq '.items[] as $app | (if $app.status.replicas != null then $app.status.replicas else 0 end) as $desired | (if $app.status.readyReplicas != null then $app.status.readyReplicas else 0 end) as $ready | {name:$app.metadata.name, namespace:$app.metadata.namespace, desired:$desired, ready:$ready, notready:($desired - $ready)} |@json' -r
     Interval_Sec  @INTERVAL
     Interval_NSec 0
     Parser        json
@@ -159,7 +166,7 @@ const statefulset_status = `
 [INPUT]
     Name          exec
     Tag           @TAG
-    Command       curl -k https://kubernetes.default.svc/apis/apps/v1/statefulsets?pretty=false -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" | jq '.items[] as $app | (if $app.status.replicas != null then $app.status.replicas else 0 end) as $desired | (if $app.status.readyReplicas != null then $app.status.readyReplicas else 0 end) as $ready | {name:$app.metadata.name, namespace:$app.metadata.namespace, desired:$desired, ready:$ready, notready:($desired - $ready)} |@json' -r
+    Command       curl -k -s https://kubernetes.default.svc/apis/apps/v1/statefulsets?pretty=false -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" | jq '.items[] as $app | (if $app.status.replicas != null then $app.status.replicas else 0 end) as $desired | (if $app.status.readyReplicas != null then $app.status.readyReplicas else 0 end) as $ready | {name:$app.metadata.name, namespace:$app.metadata.namespace, desired:$desired, ready:$ready, notready:($desired - $ready)} |@json' -r
 
     Interval_Sec  @INTERVAL
     Interval_NSec 0
@@ -169,7 +176,7 @@ const daemonset_status = `
 [INPUT]
     Name          exec
     Tag           @TAG
-    Command       curl -k https://kubernetes.default.svc/apis/apps/v1/daemonsets?pretty=false -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" | jq '.items[] as $app | (if $app.status.desiredNumberScheduled != null then $app.status.desiredNumberScheduled else 0 end) as $desired | (if $app.status.numberReady != null then $app.status.numberReady else 0 end) as $ready | {name:$app.metadata.name, namespace:$app.metadata.namespace, desired:$desired, ready:$ready, notready:($desired - $ready)} |@json' -r
+    Command       curl -k -s https://kubernetes.default.svc/apis/apps/v1/daemonsets?pretty=false -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" | jq '.items[] as $app | (if $app.status.desiredNumberScheduled != null then $app.status.desiredNumberScheduled else 0 end) as $desired | (if $app.status.numberReady != null then $app.status.numberReady else 0 end) as $ready | {name:$app.metadata.name, namespace:$app.metadata.namespace, desired:$desired, ready:$ready, notready:($desired - $ready)} |@json' -r
     Interval_Sec  @INTERVAL
     Interval_NSec 0
     Parser        json
@@ -184,6 +191,14 @@ const es_output = `
     Logstash_Format On
     Retry_Limit     False
     Type            flb_type
-    Include_Tag_key On
     Logstash_Prefix @PREFIX
 `
+// kafka output
+const kafka_output = `
+[OUTPUT]
+    Name              kafka
+    Match             @MATCH
+    Brokers           @BROKERS
+    Timestamp_Format  @TIMESTAMP_FORMAT
+    Topics            @TOPICS
+@RDKAFKA_OPTIONS`

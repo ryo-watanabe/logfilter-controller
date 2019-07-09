@@ -55,6 +55,8 @@ type Controller struct {
 	fluentbitimage string
 	metricsimage string
 	registrykey string
+	kafkasecret string
+	kafkasecretpath string
 	namespace string
 	currentfluentbitlua string
 	currentfluentbitmetricconfig string
@@ -66,13 +68,15 @@ type Controller struct {
 // NewController returns a new sample controller
 func NewController(
 	kubeclientset kubernetes.Interface,
-	fluentbitimage, metricsimage, registrykey, namespace string) *Controller {
+	fluentbitimage, metricsimage, registrykey, kafkasecret, kafkasecretpath, namespace string) *Controller {
 
 	controller := &Controller{
 		kubeclientset: kubeclientset,
 		fluentbitimage: fluentbitimage,
 		metricsimage: metricsimage,
 		registrykey: registrykey,
+		kafkasecret: kafkasecret,
+		kafkasecretpath: kafkasecretpath,
 		namespace: namespace,
 		currentfluentbitlua: "",
 		currentfluentbitmetricconfig: "",
@@ -161,7 +165,7 @@ func (c *Controller) updateDaemonSet(name, config_name string, nodegroup map[str
 	getOptions := metav1.GetOptions{IncludeUninitialized: false}
 	_, err := c.kubeclientset.AppsV1().DaemonSets(c.namespace).Get(name, getOptions)
 	newDaemonSet := resources.NewDaemonSet(c.labels, name, c.namespace,
-		c.fluentbitimage, c.registrykey, tolerations, node_selector, config_name)
+		c.fluentbitimage, c.kafkasecret, c.kafkasecretpath, c.registrykey, tolerations, node_selector, config_name)
 	if errors.IsNotFound(err) {
 		_, err = c.kubeclientset.AppsV1().DaemonSets(c.namespace).Create(newDaemonSet)
 	} else {
@@ -176,7 +180,8 @@ func (c *Controller) updateDaemonSet(name, config_name string, nodegroup map[str
 func (c *Controller) updateDeployment(name, config_name string) error {
 	getOptions := metav1.GetOptions{IncludeUninitialized: false}
 	_, err := c.kubeclientset.AppsV1().Deployments(c.namespace).Get(name, getOptions)
-	newDeployment := resources.NewDeployment(c.metricslabels, name, c.namespace, c.metricsimage, c.registrykey, config_name)
+	newDeployment := resources.NewDeployment(c.metricslabels, name, c.namespace, c.metricsimage, c.kafkasecret,
+		c.kafkasecretpath, c.registrykey, config_name)
 	if errors.IsNotFound(err) {
 		_, err = c.kubeclientset.AppsV1().Deployments(c.namespace).Create(newDeployment)
 	} else {
@@ -238,11 +243,15 @@ func (c *Controller) syncHandler() error {
 	if err != nil {
 		return err
 	}
+	kafkas, err := c.loadConfigMaps("logfilter.ssl.com/kafka")
+	if err != nil {
+		return err
+	}
 
   // Log, Proc fluent-bit daemonsets for node groups
 	for _, nodegroup := range nodegroups.Items {
 		group := nodegroup.ObjectMeta.Name
-		cfg := fluentbitcfg.MakeFluentbitConfig(logs, procs, os_monits, outputs, group)
+		cfg := fluentbitcfg.MakeFluentbitConfig(logs, procs, os_monits, outputs, kafkas, group)
 
 		configupdated := false
 		_, ok := c.currentfluentbitconfig[group]
@@ -265,7 +274,7 @@ func (c *Controller) syncHandler() error {
 	}
 
   // Metrics fluent-bit deployment.
-	metricscfg := fluentbitcfg.MakeFluentbitMetricsConfig(metrics, apps, outputs)
+	metricscfg := fluentbitcfg.MakeFluentbitMetricsConfig(metrics, apps, outputs, kafkas)
 	if metricscfg["fluent-bit.conf"] != c.currentfluentbitmetricconfig {
 		configmap, err := c.updateConfigMap("fluentbit-metrics-config", metricscfg)
 		if err != nil {

@@ -159,6 +159,20 @@ data:
   port: "9200"
   index_prefix: cluster01
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: output-kafka
+  namespace: fluent-bit
+  labels:
+    logfilter.ssl.com/kafka: "true"
+data:
+  match: "*"
+  brokers: 10.10.10.1:9093,10.10.10.2:9093,10.10.10.3:9093
+  timestamp_format: iso8601
+  topics: cluster01
+  rdkafka_options: ssl.key.location=/fluent-bit/kafka/certs/private-key.pem,ssl.certificate.location=/fluent-bit/kafka/certs/cert-signed.pem,ssl.ca.location=/fluent-bit/kafka/certs/ca-cert.pem,ssl.key.password=kafka1234,security.protocol=ssl
+---
 #### Node Groups ####
 apiVersion: v1
 kind: ConfigMap

@@ -1,0 +1,172 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: cp-kafka
+    chart: cp-kafka-0.1.0
+    heritage: Tiller
+    release: confluent
+  name: confluent-cp-kafka
+  namespace: kafka
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 3
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: cp-kafka
+      release: confluent
+  serviceName: confluent-cp-kafka-headless
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "5556"
+        prometheus.io/scrape: "true"
+      creationTimestamp: null
+      labels:
+        app: cp-kafka
+        release: confluent
+    spec:
+      hostNetwork: true
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - cp-kafka
+                - key: release
+                  operator: In
+                  values:
+                  - confluent
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+      containers:
+      - command:
+        - java
+        - -XX:+UnlockExperimentalVMOptions
+        - -XX:+UseCGroupMemoryLimitForHeap
+        - -XX:MaxRAMFraction=1
+        - -XshowSettings:vm
+        - -jar
+        - jmx_prometheus_httpserver.jar
+        - "5556"
+        - /etc/jmx-kafka/jmx-kafka-prometheus.yml
+        image: solsson/kafka-prometheus-jmx-exporter@sha256:6f82e2b0464f50da8104acd7363fb9b995001ddff77d248379f8788e78946143
+        imagePullPolicy: IfNotPresent
+        name: prometheus-jmx-exporter
+        ports:
+        - containerPort: 5556
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/jmx-kafka
+          name: jmx-config
+      - command:
+        - sh
+        - -exc
+        - |
+          export KAFKA_BROKER_ID=${POD_NAME##*-} && \
+          export KAFKA_ZOOKEEPER_CONNECT=${CONFLUENT_CP_ZOOKEEPER_SERVICE_HOST}:2181 && \
+          export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${POD_IP}:9092,SSL://${POD_IP}:9093,EXTERNAL://${HOST_IP}:$((31090 + ${KAFKA_BROKER_ID})) && \
+          exec /etc/confluent/docker/run
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.hostIP
+        - name: KAFKA_HEAP_OPTS
+          value: -Xms512M -Xmx512M
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          value: confluent-cp-zookeeper-headless:2181
+        - name: KAFKA_LOG_DIRS
+          value: /opt/kafka/data-0/logs
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: EXTERNAL://${HOST_IP}:$((31090 + ${KAFKA_BROKER_ID}))
+        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+          value: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+          value: "3"
+        - name: KAFKA_JMX_PORT
+          value: "5555"
+        - name: KAFKA_SSL_KEYSTORE_FILENAME
+          value: kafka.broker.keystore.jks
+        - name: KAFKA_SSL_KEYSTORE_CREDENTIALS
+          value: keystore-creds
+        - name: KAFKA_SSL_TRUSTSTORE_FILENAME
+          value: kafka.broker.truststore.jks
+        - name: KAFKA_SSL_TRUSTSTORE_CREDENTIALS
+          value: truststore-creds
+        - name: KAFKA_SSL_KEY_CREDENTIALS
+          value: key-creds
+        - name: KAFKA_SECURITY_INTER_BROKER_PROTOCOL
+          value: PLAINTEXT
+        - name: KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
+          value: ' '
+        - name: KAFKA_SSL_CLIENT_AUTH
+          value: required
+        - name: KAFKA_AUTHORIZER_CLASS_NAME
+          value: kafka.security.auth.SimpleAclAuthorizer
+        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+          value: SSL:SSL,PLAINTEXT:PLAINTEXT,EXTERNAL:SSL
+        - name: KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND
+          value: "true"
+        image: confluentinc/cp-enterprise-kafka:5.2.2
+        imagePullPolicy: IfNotPresent
+        name: cp-kafka-broker
+        ports:
+        - containerPort: 9092
+          name: kafka
+          protocol: TCP
+        - containerPort: 5555
+          name: jmx
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /opt/kafka/data-0
+          name: datadir-0
+        - mountPath: /etc/kafka/secrets
+          name: secrets
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: confluent-cp-kafka-jmx-configmap
+        name: jmx-config
+      - name: secrets
+        secret:
+          secretName: kafka-broker-secrets
+  updateStrategy:
+    type: RollingUpdate
+  volumeClaimTemplates:
+  - metadata:
+      creationTimestamp: null
+      name: datadir-0
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 5Gi

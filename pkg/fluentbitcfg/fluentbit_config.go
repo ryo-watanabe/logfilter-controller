@@ -2,13 +2,14 @@ package fluentbitcfg
 
 import (
 	"strings"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 )
 
 
 // Make fluent-bit.conf for DaemonSet
-func MakeFluentbitConfig(logs , procs, os_monits, outputs *corev1.ConfigMapList, node_group string) map[string]string {
+func MakeFluentbitConfig(logs , procs, os_monits, outputs, kafkas *corev1.ConfigMapList, node_group string) map[string]string {
 	ins := ""
 
 	// Log inputs
@@ -89,16 +90,37 @@ func MakeFluentbitConfig(logs , procs, os_monits, outputs *corev1.ConfigMapList,
 		outs += output
 	}
 
+	// Kafka outputs
+	for _, out := range kafkas.Items {
+		output := kafka_output
+		output = strings.Replace(output, "@MATCH", out.Data["match"], 1)
+		output = strings.Replace(output, "@BROKERS", out.Data["brokers"], 1)
+		output = strings.Replace(output, "@TIMESTAMP_FORMAT", out.Data["timestamp_format"], 1)
+		output = strings.Replace(output, "@TOPICS", out.Data["topics"], 1)
+		rdkafka_options := ""
+		if out.Data["rdkafka_options"] != "" {
+			options := strings.Split(out.Data["rdkafka_options"],",")
+			for _, option := range options {
+				kv := strings.Split(option,"=")
+				if len(kv) == 2 {
+					rdkafka_options += fmt.Sprintf("    rdkafka.%s  %s\n", kv[0], kv[1])
+				}
+			}
+		}
+		output = strings.Replace(output, "@RDKAFKA_OPTIONS", rdkafka_options, 1)
+		outs += output
+	}
+
 	config := fluentbit_config
 	config = strings.Replace(config, "@INPUTS", ins, 1)
-	config = strings.Replace(config, "@FILTERS", hostname_filter + ignore_filter, 1)
+	config = strings.Replace(config, "@FILTERS", hostname_filter + ignore_filter + tagkey_filter, 1)
 	config = strings.Replace(config, "@OUTPUTS", outs, 1)
 
 	return map[string]string{"fluent-bit.conf":config}
 }
 
 // Make fluent-bit.conf for DaemonSet
-func MakeFluentbitMetricsConfig(metrics, apps, outputs *corev1.ConfigMapList) map[string]string {
+func MakeFluentbitMetricsConfig(metrics, apps, outputs, kafkas *corev1.ConfigMapList) map[string]string {
 
 	ins := ""
 
@@ -150,9 +172,30 @@ func MakeFluentbitMetricsConfig(metrics, apps, outputs *corev1.ConfigMapList) ma
 		outs += output
 	}
 
+	// Kafka outputs
+	for _, out := range kafkas.Items {
+		output := kafka_output
+		output = strings.Replace(output, "@MATCH", out.Data["match"], 1)
+		output = strings.Replace(output, "@BROKERS", out.Data["brokers"], 1)
+		output = strings.Replace(output, "@TIMESTAMP_FORMAT", out.Data["timestamp_format"], 1)
+		output = strings.Replace(output, "@TOPICS", out.Data["topics"], 1)
+		rdkafka_options := ""
+		if out.Data["rdkafka_options"] != "" {
+			options := strings.Split(out.Data["rdkafka_options"],",")
+			for _, option := range options {
+				kv := strings.Split(option,"=")
+				if len(kv) == 2 {
+					rdkafka_options += fmt.Sprintf("    rdkafka.%s  %s\n", kv[0], kv[1])
+				}
+			}
+		}
+		output = strings.Replace(output, "@RDKAFKA_OPTIONS", rdkafka_options, 1)
+		outs += output
+	}
+
 	config := fluentbit_config
 	config = strings.Replace(config, "@INPUTS", ins, 1)
-	config = strings.Replace(config, "@FILTERS", metrics_filter, 1)
+	config = strings.Replace(config, "@FILTERS", metrics_filter + tagkey_filter, 1)
 	config = strings.Replace(config, "@OUTPUTS", outs, 1)
 
 	return map[string]string{"fluent-bit.conf":config}
