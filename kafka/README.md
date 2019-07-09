@@ -132,7 +132,7 @@ es-connect.json (example)
   }
 }
 ```
-Topics which has prefix 'es_' will be transfered to ES as index es_XXXXX-yyyy.MM.dd
+Topics with prefix 'es_' will be transfered to ES, as index es_XXXXX-yyyy.MM.dd
 ## Check kafka broker
 ```
 $ kubectl apply -f kafka/testclient.yaml
