@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: templates
+  namespace: fluent-bit
+data:
+  daemonset_fluent-bit.conf: |
+    [SERVICE]
+        Flush        1
+        Daemon       Off
+        Log_Level    error
+        Parsers_File parsers.conf
+
+    @INPUTS
+
+    ### aditional inputs here
+
+    ## FILTERS
+
+    [FILTER]
+        Name record_modifier
+        Match *
+        Record hostname ${HOSTNAME}
+
+    [FILTER]
+        Name lua
+        Match *
+        script /fluent-bit/logfilter/funcs.lua
+        call ignore_message
+
+    [FILTER]
+        Name lua
+        Match *
+        script /fluent-bit/filter/scripts.lua
+        call add_flb_key
+
+    ### aditional filters here
+
+    @OUTPUTS
+
+    # aditional outputs here
+
+  deployment_fluent-bit.conf: |
+    [SERVICE]
+        Flush        1
+        Daemon       Off
+        Log_Level    error
+        Parsers_File parsers.conf
+
+    @INPUTS
+
+    ### aditional inputs here
+
+    ## FILTERS
+
+    [FILTER]
+        Name lua
+        Match metrics.*
+        script /fluent-bit/filter/scripts.lua
+        call cpu_memory_in_number
+
+    [FILTER]
+        Name lua
+        Match *
+        script /fluent-bit/filter/scripts.lua
+        call add_flb_key
+
+    ### aditional filters here
+
+    @OUTPUTS
+
+    # aditional outputs here

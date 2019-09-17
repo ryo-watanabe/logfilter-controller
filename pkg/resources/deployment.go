@@ -48,10 +48,6 @@ func NewDeployment(labels map[string]string, name, namespace, image, kafkasecret
                                                                         SubPath:   "fluent-bit.conf",
 								},
                                                                 {
-									Name:      "lua",
-									MountPath: "/fluent-bit/metrics",
-								},
-                                                                {
 									Name:      "filter",
 									MountPath: "/fluent-bit/filter",
 								},
@@ -71,22 +67,12 @@ func NewDeployment(labels map[string]string, name, namespace, image, kafkasecret
 								},
 							},
 						},
-						{
-							Name: "lua",
-							VolumeSource: corev1.VolumeSource{
-								ConfigMap: &corev1.ConfigMapVolumeSource{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: "fluent-bit-metrics-lua",
-									},
-								},
-							},
-						},
                                                 {
 							Name: "filter",
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
-										Name: "fluentbit-lua",
+										Name: "lua-filter-scripts",
 									},
 								},
 							},

@@ -114,6 +114,10 @@ func NewDaemonSet(labels map[string]string,
                                                                         SubPath:   "fluent-bit.conf",
 								},
                                                                 {
+									Name:      "logfilter",
+									MountPath: "/fluent-bit/logfilter",
+								},
+                                                                {
 									Name:      "filter",
 									MountPath: "/fluent-bit/filter",
 								},
@@ -188,11 +192,21 @@ func NewDaemonSet(labels map[string]string,
 							},
 						},
 						{
-							Name: "filter",
+							Name: "logfilter",
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
 										Name: "fluentbit-lua",
+									},
+								},
+							},
+						},
+                                                {
+							Name: "filter",
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: "lua-filter-scripts",
 									},
 								},
 							},

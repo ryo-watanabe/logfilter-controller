@@ -9,7 +9,7 @@ import (
 
 
 // Make fluent-bit.conf for DaemonSet
-func MakeFluentbitConfig(logs , procs, os_monits, outputs, kafkas *corev1.ConfigMapList, node_group string) map[string]string {
+func MakeFluentbitConfig(template string, logs , procs, os_monits, outputs, kafkas *corev1.ConfigMapList, node_group string) map[string]string {
 	ins := ""
 
 	// Log inputs
@@ -111,16 +111,15 @@ func MakeFluentbitConfig(logs , procs, os_monits, outputs, kafkas *corev1.Config
 		outs += output
 	}
 
-	config := fluentbit_config
+	config := template
 	config = strings.Replace(config, "@INPUTS", ins, 1)
-	config = strings.Replace(config, "@FILTERS", hostname_filter + ignore_filter + tagkey_filter, 1)
 	config = strings.Replace(config, "@OUTPUTS", outs, 1)
 
 	return map[string]string{"fluent-bit.conf":config}
 }
 
 // Make fluent-bit.conf for DaemonSet
-func MakeFluentbitMetricsConfig(metrics, apps, outputs, kafkas *corev1.ConfigMapList) map[string]string {
+func MakeFluentbitMetricsConfig(template string, metrics, apps, outputs, kafkas *corev1.ConfigMapList) map[string]string {
 
 	ins := ""
 
@@ -193,9 +192,8 @@ func MakeFluentbitMetricsConfig(metrics, apps, outputs, kafkas *corev1.ConfigMap
 		outs += output
 	}
 
-	config := fluentbit_config
+	config := template
 	config = strings.Replace(config, "@INPUTS", ins, 1)
-	config = strings.Replace(config, "@FILTERS", metrics_filter + tagkey_filter, 1)
 	config = strings.Replace(config, "@OUTPUTS", outs, 1)
 
 	return map[string]string{"fluent-bit.conf":config}

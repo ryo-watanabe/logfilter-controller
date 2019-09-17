@@ -203,7 +203,7 @@ func (c *Controller) syncHandler() error {
 		return err
 	}
 	lua := fluentbitcfg.MakeFluentbitIgnoreLua(logfilters)
-  luaupdated := false
+  	luaupdated := false
 	if lua["funcs.lua"] != c.currentfluentbitlua {
 		configmap, err := c.updateConfigMap("fluentbit-lua", lua)
 		if err != nil {
@@ -214,7 +214,7 @@ func (c *Controller) syncHandler() error {
 		klog.Info("Logfilter updated.")
 	}
 
-  // Load/update configmaps
+  	// Load/update configmaps
 	nodegroups, err := c.loadConfigMaps("logfilter.ssl.com/nodegroup")
 	if err != nil {
 		return err
@@ -248,10 +248,25 @@ func (c *Controller) syncHandler() error {
 		return err
 	}
 
-  // Log, Proc fluent-bit daemonsets for node groups
+	// load template
+	templateConfigMap, err := c.kubeclientset.CoreV1().ConfigMaps(c.namespace).Get("templates", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	if templateConfigMap.Data["daemonset_fluent-bit.conf"] == "" {
+		return fmt.Errorf("Cannot find 'daemonset_fluent-bit.conf' in ConfigMap 'templates'")
+	}
+	if templateConfigMap.Data["deployment_fluent-bit.conf"] == "" {
+		return fmt.Errorf("Cannot find 'deployment_fluent-bit.conf' in ConfigMap 'templates'")
+	}
+
+  	// Log, Proc fluent-bit daemonsets for node groups
 	for _, nodegroup := range nodegroups.Items {
+
+		// make config
 		group := nodegroup.ObjectMeta.Name
-		cfg := fluentbitcfg.MakeFluentbitConfig(logs, procs, os_monits, outputs, kafkas, group)
+		cfg := fluentbitcfg.MakeFluentbitConfig(templateConfigMap.Data["daemonset_fluent-bit.conf"],
+			logs, procs, os_monits, outputs, kafkas, group)
 
 		configupdated := false
 		_, ok := c.currentfluentbitconfig[group]
@@ -273,8 +288,9 @@ func (c *Controller) syncHandler() error {
 		}
 	}
 
-  // Metrics fluent-bit deployment.
-	metricscfg := fluentbitcfg.MakeFluentbitMetricsConfig(metrics, apps, outputs, kafkas)
+  	// Metrics fluent-bit deployment.
+	metricscfg := fluentbitcfg.MakeFluentbitMetricsConfig(templateConfigMap.Data["deployment_fluent-bit.conf"],
+		metrics, apps, outputs, kafkas)
 	if metricscfg["fluent-bit.conf"] != c.currentfluentbitmetricconfig {
 		configmap, err := c.updateConfigMap("fluentbit-metrics-config", metricscfg)
 		if err != nil {

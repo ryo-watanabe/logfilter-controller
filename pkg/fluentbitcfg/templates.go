@@ -3,42 +3,21 @@ package fluentbitcfg
 import (
 )
 
-// config body
+/*// config body
 const fluentbit_config = `[SERVICE]
     Flush        1
     Daemon       Off
     Log_Level    error
     Parsers_File parsers.conf
-@INPUTS@FILTERS@OUTPUTS
+@INPUTS
+# Add aditional inputs here
+@FILTERS
+# Add aditional filters here
+@OUTPUTS
+# Add aditional outputs here
 `
-// filters
-const hostname_filter = `
-[FILTER]
-    Name record_modifier
-    Match *
-    Record hostname ${HOSTNAME}
-`
-const metrics_filter = `
-[FILTER]
-    Name lua
-    Match metrics.*
-    script /fluent-bit/metrics/fluent-bit-metrics.lua
-    call cpu_memory_in_number
-`
-const ignore_filter = `
-[FILTER]
-    Name lua
-    Match *
-    script /fluent-bit/filter/funcs.lua
-    call ignore_message
-`
-const tagkey_filter = `
-[FILTER]
-    Name lua
-    Match *
-    script /fluent-bit/filter/funcs.lua
-    call add_flb_key
-`
+*/
+
 // log inputs
 const k8s_pod_log = `
 [INPUT]
@@ -72,7 +51,7 @@ const rke_container_log = `
 [FILTER]
     Name   lua
     Match  @TAG
-    script /fluent-bit/filter/funcs.lua
+    script /fluent-bit/filter/scripts.lua
     call   add_record
 `
 const syslog = `
