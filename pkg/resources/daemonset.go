@@ -36,12 +36,17 @@ func NewDaemonSet(labels map[string]string,
                                         Key: "node-role.kubernetes.io/etcd",
                                         Value: "true",
                                 })
-                        }
-                        if t == "controlplane" {
+                        } else if t == "controlplane" {
                                 tols = append(tols, corev1.Toleration{
                                         Effect: "NoSchedule",
                                         Key: "node-role.kubernetes.io/controlplane",
                                         Value: "true",
+                                })
+                        } else {
+                                tols = append(tols, corev1.Toleration{
+                                        Effect: "NoSchedule",
+                                        Key: "node-role.kubernetes.io/" + t,
+                                        Operator: "Exists",
                                 })
                         }
                 }
