@@ -8,8 +8,10 @@ data:
   scripts.lua: |-
     function cpu_memory_in_number(tag, timestamp, record)
       new_record = record
-      cpu_num = string.gsub(record["cpu"],"m","")
-      new_record["cpu_num"] = tonumber(cpu_num)
+      cpu_num = string.gsub(record["cpu"],"n","")
+      cpu_num = string.gsub(cpu_num,"u","000")
+      cpu_num = string.gsub(cpu_num,"m","000000")
+      new_record["cpu_num"] = tonumber(cpu_num) / 1000000
       memory_num = string.gsub(record["memory"],"Ki","")
       new_record["memory_num"] = tonumber(memory_num)
       return 1, timestamp, new_record
