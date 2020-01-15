@@ -26,7 +26,7 @@ fi
 
 before_date=`date "+%Y/%m/%d" -d "-$DAYS days"`
 before_seconds=`date -d "$before_date" '+%s'`
-indices=`curl -s http://${ES_HOST}:${ES_PORT}/_cat/indices/${INDEX_PREFIX}-* | cut -d' ' -f3`
+indices=`curl -s http://${ES_HOST}:${ES_PORT}/_cat/indices/${INDEX_PREFIX}-* | tr -s ' ' | cut -d' ' -f3`
 
 if [ $MODE == "DRYRUN" ] ; then
   echo "Indices to delete:"
